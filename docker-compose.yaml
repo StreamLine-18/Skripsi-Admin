@@ -1,0 +1,17 @@
+version: "3.8"
+name: neo-fipex-cms
+networks:
+  default:
+    driver: bridge
+services:
+  app:
+    build:
+      context: .
+      dockerfile: .docker/Dockerfile
+      target: production
+    image: ${IMAGE_NAME:-neo-fipex-cms:latest}
+    ports:
+      - "8080:80"
+    container_name: neo-fipex-cms
+    networks:
+      - default

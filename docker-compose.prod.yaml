@@ -1,0 +1,12 @@
+version: "3.8"
+name: neo-fipex-cms
+networks:
+  default:
+    name: nginx
+    external: true
+services:
+  app:
+    image: fipexdeveloper/neo-fipex-cms:latest
+    container_name: neo-fipex-cms
+    networks:
+      - default
