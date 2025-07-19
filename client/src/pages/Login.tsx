@@ -2,16 +2,16 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useLocation } from "wouter";
 import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { useToast } from "@/hooks/use-toast";
-import { Eye, EyeOff, Lock, Mail, MedalIcon } from "lucide-react";
+import { Eye, EyeOff, Lock, Mail } from "lucide-react";
 import { authApi, type AuthResponse } from "@/lib/api";
 import logo from '@/assets/images/logo.png';
-import { Link } from "wouter"; // Import the Link component
 
 const loginSchema = z.object({
   email: z.string().email("Please enter a valid email address"),
@@ -24,6 +24,7 @@ export default function Login() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [showPassword, setShowPassword] = useState(false);
+  const [, setLocation] = useLocation();
 
   const form = useForm<LoginFormData>({
     resolver: zodResolver(loginSchema),
@@ -41,38 +42,30 @@ export default function Login() {
       }
       return response.data;
     },
-    onSuccess: async (data: AuthResponse) => {
-      localStorage.setItem("access_token", data.access_token);
-
-      try {
-        const userResponse = await authApi.getMe();
-        const user = userResponse.data;
-
-        if (user.role === 'admin') {
-          toast({
-            title: "Success",
-            description: "Successfully logged in! Redirecting...",
-            variant: "default",
-          });
-          queryClient.invalidateQueries({ queryKey: ['me'] });
-          setTimeout(() => {
-            window.location.href = "/";
-          }, 1000);
-        } else {
-          toast({
-            title: "Welcome!",
-            description: "Redirecting to the leaderboard...",
-            variant: "default",
-          });
-          setTimeout(() => {
-            window.location.href = "/leaderboard/4cfebddd-fe1e-4c7b-a05e-4bb45f4e13d6";
-          }, 1000);
-        }
-      } catch (error) {
-        localStorage.removeItem("access_token");
+    onSuccess: (data: AuthResponse | null) => {
+      if (!data) {
+        throw new Error("Login response did not contain data.");
+      }
+      
+      // Check the user's role from the login response
+      if (data.role === "admin") {
+        localStorage.setItem("access_token", data.accessToken);
+        console.log("Login successful:", data);
+        
         toast({
-          title: "Authentication Error",
-          description: "Could not verify user role. Please try again.",
+          title: "Success",
+          description: "Successfully logged in!",
+          variant: "default",
+        });
+        
+        // Invalidate queries and navigate immediately
+        queryClient.invalidateQueries({ queryKey: ['me'] });
+        setLocation("/"); // Use wouter navigation instead of window.location
+      } else {
+        // If not an admin, deny access
+        toast({
+          title: "Access Denied",
+          description: "You do not have permission to access the admin panel.",
           variant: "destructive",
         });
       }
@@ -99,9 +92,9 @@ export default function Login() {
 
         <Card>
           <CardHeader className="text-center">
-            <CardTitle>Welcome back</CardTitle>
+            <CardTitle>Admin Panel Login</CardTitle>
             <CardDescription>
-              Enter your credentials to access your account
+              Enter your credentials to access the dashboard
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -161,22 +154,15 @@ export default function Login() {
                     </FormItem>
                   )}
                 />
-
-                {/* UPDATED: Added a container for the buttons */}
-                <div className="flex flex-col sm:flex-row gap-2 pt-2">
-                  <Link href="/leaderboard/8bc1204a-39bb-40d7-b838-df2b8e9b87d4" className="w-full">
-                      <Button type="button" variant="outline" className="w-full">
-                          <MedalIcon className="h-4 w-4 mr-2" />
-                          View Leaderboard
-                      </Button>
-                  </Link>
-                  <Button
-                    type="submit"
-                    className="w-full"
-                    disabled={loginMutation.isPending}
-                  >
-                    {loginMutation.isPending ? "Signing in..." : "Sign in"}
-                  </Button>
+                
+                <div className="pt-2">
+                    <Button
+                        type="submit"
+                        className="w-full"
+                        disabled={loginMutation.isPending}
+                    >
+                        {loginMutation.isPending ? "Signing in..." : "Sign in"}
+                    </Button>
                 </div>
               </form>
             </Form>
@@ -185,10 +171,7 @@ export default function Login() {
 
         <div className="text-center">
           <p className="text-xs text-gray-500">
-            Copyright &copy; {new Date().getFullYear()} Ruang Ekspresi. All rights reserved.
-          </p>
-          <p className="text-xs text-gray-100 mt-5">
-            StreamLine   
+            Copyright &copy; {new Date().getFullYear()} Alas Purwo. All rights reserved.
           </p>
         </div>
       </div>

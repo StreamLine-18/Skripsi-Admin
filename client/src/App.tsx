@@ -1,3 +1,4 @@
+import React from "react";
 import { Switch, Route, Redirect, useLocation } from "wouter";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider, useQuery } from "@tanstack/react-query";
@@ -5,27 +6,13 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import AdminLayout from "@/components/layout/AdminLayout";
 import Dashboard from "@/pages/Dashboard";
-import Banner from "@/pages/Banner";
 import Login from "@/pages/Login";
-import ProductsCategory from "@/pages/ProductsCategory";
 import NotFound from "@/pages/not-found";
-import Events from "@/pages/Events";
-import TeamManagement from "@/pages/Teams";
-import TeamMembers from "./pages/TeamMember";
-import HealthCheck from "./pages/HealthCheck";
-import Product from "./pages/Product";
-import EventGuestBooks from "./pages/EventGuestBooks";
-import AttendanceList from "./pages/GuestBookAttendanceList";
-import EventFullAttendance from "./pages/EventFullAttendance";
-import Users from "./pages/Users";
-import Badges from "./pages/BadgeType";
-import UserBadges from "./pages/UserBadges";
-import FitalkParticipants from "./pages/FitalkParticipants";
-import FitalkAttendance from "./pages/FitalkAttendance";
-import Leaderboard from "./pages/Leaderboard";
+// import Users from "@/pages/Users";
 import { authApi } from "./lib/api";
 import { useToast } from "./hooks/use-toast";
 
+// --- Full Screen Loader ---
 function FullScreenLoader() {
   return (
     <div className="flex h-screen w-screen items-center justify-center">
@@ -34,13 +21,39 @@ function FullScreenLoader() {
   );
 }
 
+// --- Placeholder Components for New Pages ---
+function Tickets() {
+  return (
+    <div className="container mx-auto p-4">
+      <h1 className="text-2xl font-bold">Manage Tickets</h1>
+      <p className="text-muted-foreground">This page is under construction.</p>
+    </div>
+  );
+}
+
+function Bookings() {
+  return (
+    <div className="container mx-auto p-4">
+      <h1 className="text-2xl font-bold">View Bookings</h1>
+      <p className="text-muted-foreground">This page is under construction.</p>
+    </div>
+  );
+}
+
+function Users() {
+  return (
+    <div className="container mx-auto p-4">
+      <h1 className="text-2xl font-bold">Manage Users</h1>
+      <p className="text-muted-foreground">This page is under construction.</p>
+    </div>
+  );
+}
+
 // --- Component for Public Routes ---
-// This now only contains routes that are strictly for unauthenticated users.
 function PublicRoutes() {
   return (
     <Switch>
       <Route path="/login" component={Login} />
-      <Route path="/leaderboard/:id_event" component={Leaderboard} />
       <Route>
         <Redirect to="/login" />
       </Route>
@@ -49,27 +62,18 @@ function PublicRoutes() {
 }
 
 // --- Component for Protected Routes ---
-// This remains the same, containing all routes that need the AdminLayout.
 function ProtectedRoutes() {
   return (
     <AdminLayout>
       <Switch>
         <Route path="/" component={Dashboard} />
+        {/* <Route path="/users" component={Users} /> */}
+        <Route path="/tickets" component={Tickets} /> 
+        <Route path="/bookings" component={Bookings} /> 
         <Route path="/users" component={Users} />
-        <Route path="/users/:id_user/badges" component={UserBadges} />
-        <Route path="/products-category" component={ProductsCategory} />
-        <Route path="/events" component={Events} />
-        <Route path="/events/:id_event/guest-books" component={EventGuestBooks} />
-        <Route path="/events/:id_event/guest-books/:id_guest_book/attendances" component={AttendanceList} />
-        <Route path="/events/:id_event/attendances" component={EventFullAttendance} />
-        <Route path="/banner" component={Banner} />
-        <Route path="/team-management" component={TeamManagement} />
-        <Route path="/team-members/:teamId" component={TeamMembers} />
-        <Route path="/products" component={Product} />
-        <Route path="/health-check" component={HealthCheck} />
-        <Route path="/badge-type" component={Badges} />
-        <Route path="/fitalk/participants" component={FitalkParticipants} />
-        <Route path="/fitalk/attendances" component={FitalkAttendance} />
+        {/* Redirect to Dashboard for root path */}
+        
+        {/* Redirect login attempts when already logged in */}
         <Route path="/login">
           <Redirect to="/" />
         </Route>
@@ -79,64 +83,77 @@ function ProtectedRoutes() {
   );
 }
 
-// This component now only handles the logic for authenticated vs. unauthenticated routes.
+// --- Auth Resolver with API call ---
 function AuthResolver() {
     const token = localStorage.getItem("access_token");
     const [, setLocation] = useLocation();
     const { toast } = useToast();
-
+    
     const { data: userResponse, isLoading, isError } = useQuery({
         queryKey: ['me'],
         queryFn: authApi.getMe,
         enabled: !!token,
         retry: false,
+        staleTime: 5 * 60 * 1000, // 5 minutes
+        gcTime: 10 * 60 * 1000, // 10 minutes
     });
 
-    if (isLoading && token) {
+    // Handle error case first
+    React.useEffect(() => {
+        if (isError && token) {
+            localStorage.removeItem("access_token");
+            localStorage.removeItem("user_role");
+            setLocation("/login");
+        }
+    }, [isError, token, setLocation]);
+
+    // If no token, show public routes immediately
+    if (!token) {
+        return <PublicRoutes />;
+    }
+
+    // Show loader only while actually loading
+    if (isLoading) {
         return <FullScreenLoader />;
     }
 
+    // Handle error case
     if (isError) {
-        localStorage.removeItem("access_token");
-        setLocation("/login");
-        return null;
+        return null; // Will redirect via useEffect above
     }
 
+    // Handle successful authentication
     if (userResponse?.data) {
         const user = userResponse.data;
-        if (user.role === 'admin') {
+        // Check the nested role name from the /me endpoint
+        if (user.role?.name === 'admin') {
             return <ProtectedRoutes />;
         } else {
-            localStorage.removeItem("access_token");
-            toast({
-                title: "Access Denied",
-                description: "You do not have permission to access the admin panel.",
-                variant: "destructive",
-            });
-            setLocation("/login");
+            // Handle non-admin users
+            React.useEffect(() => {
+                localStorage.removeItem("access_token");
+                localStorage.removeItem("user_role");
+                toast({
+                    title: "Access Denied",
+                    description: "You do not have permission to access the admin panel.",
+                    variant: "destructive",
+                });
+                setLocation("/login");
+            }, []);
             return null;
         }
     }
 
+    // Fallback to public routes if no user data
     return <PublicRoutes />;
 }
-
 
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
         <Toaster />
-        {/* UPDATED: The main router now handles the public leaderboard route first */}
-        <Switch>
-          {/* This route is now outside the AuthResolver, so it won't have the admin layout */}
-          <Route path="/leaderboard/:id_event" component={Leaderboard} />
-          
-          {/* All other routes are handled by the AuthResolver */}
-          <Route>
-            <AuthResolver />
-          </Route>
-        </Switch>
+        <AuthResolver />
       </TooltipProvider>
     </QueryClientProvider>
   );

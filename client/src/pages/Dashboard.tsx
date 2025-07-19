@@ -1,109 +1,105 @@
 import { useQuery } from "@tanstack/react-query";
-import { Users, Package, Calendar, Boxes, Tag } from "lucide-react";
+import { Users, Ticket, ClipboardList, DollarSign } from "lucide-react";
 import { StatsCard } from "@/components/ui/stats-card";
 import { DataTable } from "@/components/ui/data-table";
 import { 
-    productApi, 
-    userApi, 
-    eventApi, 
-    teamApi,
-    productCategoryApi
+    userApi,
+    ticketApi,
+    bookingApi,
 } from "@/lib/api";
-import type { User, Event, Product, Team, ProductCategory } from "@/lib/api";
+import type { User, Ticket as TicketType, Booking } from "@/lib/api";
 import { useMemo } from "react";
+import { Badge } from "@/components/ui/badge";
 
 export default function Dashboard() {
 
-  // --- Fetch all necessary data in parallel ---
+  // --- Fetch all necessary data in parallel for the dashboard ---
   const { data: usersResponse, isLoading: isLoadingUsers } = useQuery({ 
-    queryKey: ["users"], 
-    queryFn: () => userApi.getUsers({ page_size: 9999 })  });
-  const { data: productsResponse, isLoading: isLoadingProducts } = useQuery({ 
-    queryKey: ["products"], 
-    queryFn: () => productApi.getProducts({ page_size: 9999 }) 
+    queryKey: ["users", "all"], 
+    queryFn: () => userApi.getUsers({ page_size: 9999 })
   });
-  const { data: eventsResponse, isLoading: isLoadingEvents } = useQuery({ queryKey: ["events"], queryFn: eventApi.getEvents });
-  const { data: categoriesResponse, isLoading: isLoadingCategories } = useQuery({ queryKey: ["productCategories"], queryFn: productCategoryApi.getProductCategories });
-  const { data: teamsResponse, isLoading: isLoadingTeams } = useQuery({ queryKey: ["teams"], queryFn: teamApi.getTeams });
+  const { data: ticketsResponse, isLoading: isLoadingTickets } = useQuery({ 
+    queryKey: ["tickets", "all"], 
+    queryFn: () => ticketApi.getTickets({ page_size: 9999 }) 
+  });
+  const { data: bookingsResponse, isLoading: isLoadingBookings } = useQuery({ 
+    queryKey: ["bookings", "all"], 
+    queryFn: () => bookingApi.getBookings({ page_size: 9999 }) 
+  });
 
   // --- Calculate Stats ---
   const stats = useMemo(() => {
     const users = Array.isArray(usersResponse?.data) ? usersResponse.data : [];
-    const products = Array.isArray(productsResponse?.data) ? productsResponse.data : [];
-    const events = Array.isArray(eventsResponse?.data) ? eventsResponse.data : [];
-    const categories = Array.isArray(categoriesResponse?.data) ? categoriesResponse.data : [];
+    const tickets = Array.isArray(ticketsResponse?.data) ? ticketsResponse.data : [];
+    const bookings = Array.isArray(bookingsResponse?.data) ? bookingsResponse.data : [];
     
-    const now = new Date();
-    const activeEvents = events.filter((event: Event) => {
-        const startDate = new Date(event.start_date.split('/').reverse().join('-'));
-        const endDate = new Date(event.end_date.split('/').reverse().join('-'));
-        return startDate <= now && now <= endDate;
-    }).length;
+    // Calculate total revenue from successful bookings
+    const totalRevenue = bookings
+      .filter(b => b.status === 'paid')
+      .reduce((sum, booking) => sum + Number(booking.total_amount), 0);
 
     return {
-      totalUsers: users.length,
-      totalProducts: products.length,
-      activeEvents: activeEvents,
-      totalCategories: categories.length,
+      totalVisitors: users.filter(u => u.role?.name === 'visitor').length,
+      totalTicketTypes: tickets.length,
+      totalBookings: bookings.length,
+      totalRevenue: totalRevenue,
     };
-  }, [usersResponse, productsResponse, eventsResponse, categoriesResponse]);
+  }, [usersResponse, ticketsResponse, bookingsResponse]);
 
-  // --- Prepare data for tables ---
-  const products: Product[] = Array.isArray(productsResponse?.data) ? productsResponse.data : [];
-  const teams: Team[] = Array.isArray(teamsResponse?.data) ? teamsResponse.data : [];
-  const categories: ProductCategory[] = Array.isArray(categoriesResponse?.data) ? categoriesResponse.data : [];
-  const events: Event[] = Array.isArray(eventsResponse?.data) ? eventsResponse.data : [];
-
-  // Sort products by creation date and get the most recent ones
-  const recentProducts = useMemo(() => {
-    return products
+  // --- Prepare data for recent bookings table ---
+  const recentBookings = useMemo(() => {
+    const bookings = Array.isArray(bookingsResponse?.data) ? bookingsResponse.data : [];
+    return bookings
       .sort((a, b) => new Date(b.created_on).getTime() - new Date(a.created_on).getTime())
       .slice(0, 5);
-  }, [products]);
+  }, [bookingsResponse]);
 
-  // --- Create lookup maps for displaying names instead of IDs ---
-  const teamMap = useMemo(() => new Map(teams.map(t => [t.id_team, t.name])), [teams]);
-  const categoryMap = useMemo(() => new Map(categories.map(c => [c.id_category, c.name])), [categories]);
-  const eventMap = useMemo(() => new Map(events.map(e => [e.id_event, e.name])), [events]);
-
-  const productColumns = [
+  const bookingColumns = [
     {
-      key: "name",
-      label: "Product",
-      render: (product: Product) => (
+      key: "id_booking",
+      label: "Booking ID",
+       render: (booking: Booking) => (
+        <div className="font-mono text-xs">{booking.id_booking.split('-')[0]}...</div>
+      )
+    },
+    {
+      key: "visitor",
+      label: "Visitor",
+      render: (booking: Booking) => (
         <div className="flex items-center">
-          <img src={product.image_urls[0]} alt={product.name} className="h-10 w-10 rounded-md object-cover bg-slate-200" onError={(e) => { e.currentTarget.src = "https://placehold.co/40x40/e2e8f0/64748b?text=P"; }} />
-          <div className="ml-4">
-            <div className="text-sm font-medium text-slate-900">{product.name}</div>
-            {/* <div className="text-xs text-slate-500 font-mono">{product.id_product}</div> */}
-          </div>
+          <div className="text-sm font-medium text-slate-900">{booking.user?.full_name || 'N/A'}</div>
         </div>
       ),
     },
     {
-      key: "team",
-      label: "Team",
-      render: (product: Product) => (
-        <div className="flex items-center text-sm"><Users className="h-4 w-4 mr-2 text-muted-foreground" />{teamMap.get(product.id_team) || '...'}</div>
+      key: "total_amount",
+      label: "Amount",
+      render: (booking: Booking) => (
+        <div className="text-sm">
+          {new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR' }).format(Number(booking.total_amount))}
+        </div>
       ),
     },
     {
-      key: "category",
-      label: "Category",
-      render: (product: Product) => (
-        <div className="flex items-center text-sm"><Tag className="h-4 w-4 mr-2 text-muted-foreground" />{categoryMap.get(product.id_category) || '...'}</div>
-      ),
+      key: "status",
+      label: "Status",
+      render: (booking: Booking) => {
+        let colorClass = "bg-slate-100 text-slate-800";
+        if (booking.status === 'paid') colorClass = "bg-emerald-100 text-emerald-800";
+        if (booking.status === 'pending') colorClass = "bg-amber-100 text-amber-800";
+        if (booking.status === 'cancelled' || booking.status === 'expired') colorClass = "bg-red-100 text-red-800";
+        
+        return <Badge className={colorClass}>{booking.status}</Badge>;
+      }
     },
     {
-      key: "event",
-      label: "Event",
-      render: (product: Product) => (
-        <div className="flex items-center text-sm"><Calendar className="h-4 w-4 mr-2 text-muted-foreground" />{eventMap.get(product.id_event) || '...'}</div>
-      ),
-    },
+        key: "created_on",
+        label: "Date",
+        render: (booking: Booking) => new Date(booking.created_on).toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' })
+    }
   ];
   
-  const isLoading = isLoadingUsers || isLoadingProducts || isLoadingEvents || isLoadingCategories || isLoadingTeams;
+  const isLoading = isLoadingUsers || isLoadingTickets || isLoadingBookings;
 
   return (
     <div>
@@ -114,7 +110,7 @@ export default function Dashboard() {
             Dashboard
           </h2>
           <p className="mt-1 text-sm text-slate-500">
-            Welcome back! Here's a summary of your application's activity.
+            Welcome back! Here's a summary of your ticketing activity.
           </p>
         </div>
       </div>
@@ -123,41 +119,40 @@ export default function Dashboard() {
       <div className="mt-8">
         <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
           <StatsCard
-            title="Total Users"
-            value={stats.totalUsers}
+            title="Total Visitors"
+            value={stats.totalVisitors}
             icon={Users}
             iconColor="bg-blue-500"
           />
           <StatsCard
-            title="Total Products"
-            value={stats.totalProducts}
-            icon={Package}
-            iconColor="bg-emerald-500"
+            title="Ticket Types"
+            value={stats.totalTicketTypes}
+            icon={Ticket}
+            iconColor="bg-purple-500"
           />
           <StatsCard
-            title="Active Events"
-            value={stats.activeEvents}
-            icon={Calendar}
+            title="Total Bookings"
+            value={stats.totalBookings}
+            icon={ClipboardList}
             iconColor="bg-amber-500"
           />
           <StatsCard
-            title="Total Categories"
-            value={stats.totalCategories}
-            icon={Boxes}
-            iconColor="bg-purple-500"
+            title="Total Revenue"
+            value={new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR' }).format(stats.totalRevenue)}
+            icon={DollarSign}
+            iconColor="bg-emerald-500"
           />
         </div>
       </div>
 
-      {/* Recent Products Table */}
+      {/* Recent Bookings Table */}
       <div className="mt-8">
         <DataTable
-          title="Recent Products"
-          description="A list of the most recently submitted products."
-          data={recentProducts.map(product => ({ ...product, id: product.id_product}))}
-          columns={productColumns}
-          searchPlaceholder="Search products..."
-          loading={isLoadingProducts}
+          title="Recent Bookings"
+          description="A list of the most recent booking transactions."
+          data={recentBookings.map(booking => ({ ...booking, id: booking.id_booking}))}
+          columns={bookingColumns}
+          loading={isLoading}
         />
       </div>
     </div>
