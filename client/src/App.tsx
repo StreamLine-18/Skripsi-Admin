@@ -8,7 +8,7 @@ import AdminLayout from "@/components/layout/AdminLayout";
 import Dashboard from "@/pages/Dashboard";
 import Login from "@/pages/Login";
 import NotFound from "@/pages/not-found";
-// import Users from "@/pages/Users";
+import Users from "@/pages/Users";
 import { authApi } from "./lib/api";
 import { useToast } from "./hooks/use-toast";
 
@@ -40,14 +40,6 @@ function Bookings() {
   );
 }
 
-function Users() {
-  return (
-    <div className="container mx-auto p-4">
-      <h1 className="text-2xl font-bold">Manage Users</h1>
-      <p className="text-muted-foreground">This page is under construction.</p>
-    </div>
-  );
-}
 
 // --- Component for Public Routes ---
 function PublicRoutes() {

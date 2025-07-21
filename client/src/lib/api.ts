@@ -87,6 +87,13 @@ export interface InsertBulkUser {
   email: string;
 }
 
+export interface InsertUser {
+  full_name: string;
+  email: string;
+  id_role: string;
+  password?: string;
+}
+
 export interface QueryParams {
     page?: number;
     page_size?: number;
@@ -117,10 +124,22 @@ export const authApi = {
     apiRequest("GET", `${API_BASE_URL}/auth/me`).then(handleResponse<ApiResponse<User>>),
 };
 
+export const roleApi = {
+    getRoles: (params: QueryParams = {}) =>
+        apiRequest("GET", createUrlWithParams(`${API_BASE_URL}/roles`, params)).then(handleResponse<ApiResponse<Role[]>>),
+};
+
 export const userApi = {
     getUsers: (params: QueryParams = {}) =>
         apiRequest("GET", createUrlWithParams(`${API_BASE_URL}/users`, params)).then(handleResponse<ApiResponse<User[]>>),
+    createUser: (data: InsertUser) =>
+        apiRequest("POST", `${API_BASE_URL}/users`, data).then(handleResponse<ApiResponse<User>>),
+    updateUser: (id: string, data: Partial<InsertUser>) =>
+        apiRequest("PUT", `${API_BASE_URL}/users/${id}`, data).then(handleResponse<ApiResponse<User>>),
+    deleteUser: (id: string) =>
+        apiRequest("DELETE", `${API_BASE_URL}/users/${id}`).then(handleResponse),
 };
+
 
 export const ticketApi = {
     getTickets: (params: QueryParams = {}) =>

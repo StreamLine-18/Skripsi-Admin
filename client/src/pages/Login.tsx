@@ -37,7 +37,7 @@ export default function Login() {
   const loginMutation = useMutation({
     mutationFn: async (data: LoginFormData) => {
       const response = await authApi.login(data);
-      if(response.meta?.success === false) {
+      if (response.meta?.success === false) {
         throw new Error(response.meta?.message || "Login failed");
       }
       return response.data;
@@ -46,18 +46,18 @@ export default function Login() {
       if (!data) {
         throw new Error("Login response did not contain data.");
       }
-      
+
       // Check the user's role from the login response
       if (data.role === "admin") {
         localStorage.setItem("access_token", data.accessToken);
         console.log("Login successful:", data);
-        
+
         toast({
           title: "Success",
           description: "Successfully logged in!",
           variant: "default",
         });
-        
+
         // Invalidate queries and navigate immediately
         queryClient.invalidateQueries({ queryKey: ['me'] });
         setLocation("/"); // Use wouter navigation instead of window.location
@@ -86,12 +86,13 @@ export default function Login() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-md w-full space-y-8">
-        <div>
-          <img src={logo} alt="Logo" className="flex items-center justify-center mx-auto"/>
-        </div>
+
 
         <Card>
           <CardHeader className="text-center">
+            <div>
+              <img src={logo} alt="Logo" className="w-52 h-52 mx-auto" />
+            </div>
             <CardTitle>Admin Panel Login</CardTitle>
             <CardDescription>
               Enter your credentials to access the dashboard
@@ -154,15 +155,15 @@ export default function Login() {
                     </FormItem>
                   )}
                 />
-                
+
                 <div className="pt-2">
-                    <Button
-                        type="submit"
-                        className="w-full"
-                        disabled={loginMutation.isPending}
-                    >
-                        {loginMutation.isPending ? "Signing in..." : "Sign in"}
-                    </Button>
+                  <Button
+                    type="submit"
+                    className="w-full"
+                    disabled={loginMutation.isPending}
+                  >
+                    {loginMutation.isPending ? "Signing in..." : "Sign in"}
+                  </Button>
                 </div>
               </form>
             </Form>
