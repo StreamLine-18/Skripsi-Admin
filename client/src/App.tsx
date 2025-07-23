@@ -9,6 +9,7 @@ import Dashboard from "@/pages/Dashboard";
 import Login from "@/pages/Login";
 import NotFound from "@/pages/not-found";
 import Users from "@/pages/Users";
+import DayTypes from "@/pages/DayTypes"; // Import the new DayTypes page
 import { authApi } from "./lib/api";
 import { useToast } from "./hooks/use-toast";
 
@@ -22,22 +23,17 @@ function FullScreenLoader() {
 }
 
 // --- Placeholder Components for New Pages ---
-function Tickets() {
-  return (
-    <div className="container mx-auto p-4">
-      <h1 className="text-2xl font-bold">Manage Tickets</h1>
-      <p className="text-muted-foreground">This page is under construction.</p>
-    </div>
-  );
-}
-
 function Bookings() {
-  return (
-    <div className="container mx-auto p-4">
-      <h1 className="text-2xl font-bold">View Bookings</h1>
-      <p className="text-muted-foreground">This page is under construction.</p>
-    </div>
-  );
+  return <div className="p-4"><h1 className="text-2xl font-bold">Bookings</h1><p>Under construction.</p></div>;
+}
+function TicketPrices() {
+  return <div className="p-4"><h1 className="text-2xl font-bold">Ticket Prices</h1><p>Under construction.</p></div>;
+}
+function Gates() {
+  return <div className="p-4"><h1 className="text-2xl font-bold">Gates</h1><p>Under construction.</p></div>;
+}
+function VisitorCategories() {
+  return <div className="p-4"><h1 className="text-2xl font-bold">Visitor Categories</h1><p>Under construction.</p></div>;
 }
 
 
@@ -46,9 +42,7 @@ function PublicRoutes() {
   return (
     <Switch>
       <Route path="/login" component={Login} />
-      <Route>
-        <Redirect to="/login" />
-      </Route>
+      <Route><Redirect to="/login" /></Route>
     </Switch>
   );
 }
@@ -59,16 +53,13 @@ function ProtectedRoutes() {
     <AdminLayout>
       <Switch>
         <Route path="/" component={Dashboard} />
-        {/* <Route path="/users" component={Users} /> */}
-        <Route path="/tickets" component={Tickets} /> 
         <Route path="/bookings" component={Bookings} /> 
         <Route path="/users" component={Users} />
-        {/* Redirect to Dashboard for root path */}
-        
-        {/* Redirect login attempts when already logged in */}
-        <Route path="/login">
-          <Redirect to="/" />
-        </Route>
+        <Route path="/ticket-prices" component={TicketPrices} /> 
+        <Route path="/day-types" component={DayTypes} /> 
+        <Route path="/gates" component={Gates} /> 
+        <Route path="/visitor-categories" component={VisitorCategories} /> 
+        <Route path="/login"><Redirect to="/" /></Route>
         <Route component={NotFound} />
       </Switch>
     </AdminLayout>
@@ -80,65 +71,56 @@ function AuthResolver() {
     const token = localStorage.getItem("access_token");
     const [, setLocation] = useLocation();
     const { toast } = useToast();
-    
+    const [isLoaderVisible, setIsLoaderVisible] = React.useState(true);
+
     const { data: userResponse, isLoading, isError } = useQuery({
         queryKey: ['me'],
         queryFn: authApi.getMe,
         enabled: !!token,
         retry: false,
-        staleTime: 5 * 60 * 1000, // 5 minutes
-        gcTime: 10 * 60 * 1000, // 10 minutes
     });
 
-    // Handle error case first
     React.useEffect(() => {
-        if (isError && token) {
-            localStorage.removeItem("access_token");
-            localStorage.removeItem("user_role");
-            setLocation("/login");
+        if (token) {
+            setIsLoaderVisible(true);
+            const timer = setTimeout(() => setIsLoaderVisible(false), 500);
+            return () => clearTimeout(timer);
+        } else {
+            setIsLoaderVisible(false);
         }
-    }, [isError, token, setLocation]);
+    }, [token]);
 
-    // If no token, show public routes immediately
-    if (!token) {
-        return <PublicRoutes />;
-    }
-
-    // Show loader only while actually loading
-    if (isLoading) {
+    if (token && (isLoading || isLoaderVisible)) {
         return <FullScreenLoader />;
     }
 
-    // Handle error case
     if (isError) {
-        return null; // Will redirect via useEffect above
+        localStorage.removeItem("access_token");
+        localStorage.removeItem("user_role");
+        setLocation("/login");
+        return null;
     }
 
-    // Handle successful authentication
     if (userResponse?.data) {
         const user = userResponse.data;
-        // Check the nested role name from the /me endpoint
         if (user.role?.name === 'admin') {
             return <ProtectedRoutes />;
         } else {
-            // Handle non-admin users
-            React.useEffect(() => {
-                localStorage.removeItem("access_token");
-                localStorage.removeItem("user_role");
-                toast({
-                    title: "Access Denied",
-                    description: "You do not have permission to access the admin panel.",
-                    variant: "destructive",
-                });
-                setLocation("/login");
-            }, []);
+            localStorage.removeItem("access_token");
+            localStorage.removeItem("user_role");
+            toast({
+                title: "Access Denied",
+                description: "You do not have permission to access the admin panel.",
+                variant: "destructive",
+            });
+            setLocation("/login");
             return null;
         }
     }
 
-    // Fallback to public routes if no user data
     return <PublicRoutes />;
 }
+
 
 function App() {
   return (

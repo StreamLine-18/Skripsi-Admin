@@ -4,10 +4,10 @@ import { StatsCard } from "@/components/ui/stats-card";
 import { DataTable } from "@/components/ui/data-table";
 import { 
     userApi,
-    ticketApi,
+    ticketPriceApi, // Updated from ticketApi to ticketPriceApi
     bookingApi,
 } from "@/lib/api";
-import type { User, Ticket as TicketType, Booking } from "@/lib/api";
+import type { User, TicketPrice, Booking } from "@/lib/api";
 import { useMemo } from "react";
 import { Badge } from "@/components/ui/badge";
 
@@ -16,21 +16,21 @@ export default function Dashboard() {
   // --- Fetch all necessary data in parallel for the dashboard ---
   const { data: usersResponse, isLoading: isLoadingUsers } = useQuery({ 
     queryKey: ["users", "all"], 
-    queryFn: () => userApi.getUsers({ page_size: 9999 })
+    queryFn: () => userApi.getUsers({ pageSize: 9999 })
   });
-  const { data: ticketsResponse, isLoading: isLoadingTickets } = useQuery({ 
-    queryKey: ["tickets", "all"], 
-    queryFn: () => ticketApi.getTickets({ page_size: 9999 }) 
+  const { data: ticketPricesResponse, isLoading: isLoadingTicketPrices } = useQuery({ 
+    queryKey: ["ticketPrices", "all"], 
+    queryFn: () => ticketPriceApi.getTicketPrices({ pageSize: 9999 }) 
   });
   const { data: bookingsResponse, isLoading: isLoadingBookings } = useQuery({ 
     queryKey: ["bookings", "all"], 
-    queryFn: () => bookingApi.getBookings({ page_size: 9999 }) 
+    queryFn: () => bookingApi.getBookings({ pageSize: 9999 }) 
   });
 
   // --- Calculate Stats ---
   const stats = useMemo(() => {
     const users = Array.isArray(usersResponse?.data) ? usersResponse.data : [];
-    const tickets = Array.isArray(ticketsResponse?.data) ? ticketsResponse.data : [];
+    const ticketPrices = Array.isArray(ticketPricesResponse?.data) ? ticketPricesResponse.data : [];
     const bookings = Array.isArray(bookingsResponse?.data) ? bookingsResponse.data : [];
     
     // Calculate total revenue from successful bookings
@@ -40,11 +40,11 @@ export default function Dashboard() {
 
     return {
       totalVisitors: users.filter(u => u.role?.name === 'visitor').length,
-      totalTicketTypes: tickets.length,
+      totalTicketPrices: ticketPrices.length,
       totalBookings: bookings.length,
       totalRevenue: totalRevenue,
     };
-  }, [usersResponse, ticketsResponse, bookingsResponse]);
+  }, [usersResponse, ticketPricesResponse, bookingsResponse]);
 
   // --- Prepare data for recent bookings table ---
   const recentBookings = useMemo(() => {
@@ -99,7 +99,7 @@ export default function Dashboard() {
     }
   ];
   
-  const isLoading = isLoadingUsers || isLoadingTickets || isLoadingBookings;
+  const isLoading = isLoadingUsers || isLoadingTicketPrices || isLoadingBookings;
 
   return (
     <div>
@@ -125,8 +125,8 @@ export default function Dashboard() {
             iconColor="bg-blue-500"
           />
           <StatsCard
-            title="Ticket Types"
-            value={stats.totalTicketTypes}
+            title="Ticket Prices"
+            value={stats.totalTicketPrices}
             icon={Ticket}
             iconColor="bg-purple-500"
           />

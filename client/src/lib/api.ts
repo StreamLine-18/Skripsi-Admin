@@ -21,10 +21,11 @@ export interface ApiResponse<T> {
     page: number;
     page_size: number;
     total_pages: number;
+    total_records: number;
   } | null;
 }
 
-// --- Type Definitions for Ticketing App ---
+// --- Type Definitions for New Schema ---
 
 export interface Role {
   id_role: string;
@@ -37,16 +38,46 @@ export interface User {
   full_name: string;
   email: string;
   id_role: string;
-  role?: Role; // Role might not always be populated
+  role?: { name: string };
   deleted: boolean;
 }
 
-export interface Ticket {
-  id_ticket: string;
-  name: string;
-  description?: string;
-  price: number;
-  is_active: boolean;
+export interface InsertUser {
+    full_name: string;
+    email: string;
+    password?: string;
+    id_role: string;
+}
+
+export interface Gate {
+    id_gate: string;
+    name: string;
+    description?: string;
+    is_active: boolean;
+}
+
+export interface VisitorCategory {
+    id_category: string;
+    name: string;
+    description?: string;
+}
+
+export interface DayType {
+    id_day_type: string;
+    name: string;
+    description?: string;
+}
+
+export interface TicketPrice {
+    id_ticket_price: string;
+    id_gate: string;
+    id_category: string;
+    id_day_type: string;
+    price: number;
+    is_active: boolean;
+    gate: Gate;
+    category: VisitorCategory;
+    dayType: DayType;
 }
 
 export interface Booking {
@@ -54,22 +85,8 @@ export interface Booking {
   id_user: string;
   total_amount: number;
   status: string;
-  payment_gateway_token?: string;
-  paid_at?: string;
   created_on: string;
-  user: User; // User who made the booking
-  bookingDetails: BookingDetail[];
-}
-
-export interface BookingDetail {
-  id_booking_detail: string;
-  id_booking: string;
-  id_ticket: string;
-  quantity: number;
-  price_per_ticket: number;
-  used_at?: string;
-  used_by?: string;
-  ticket: Ticket;
+  user: User;
 }
 
 export interface LoginData {
@@ -78,29 +95,16 @@ export interface LoginData {
 }
 
 export interface AuthResponse {
-  accessToken: string; // Updated to match your API response
+  accessToken: string;
   role: string;
-}
-
-export interface InsertBulkUser {
-  full_name: string;
-  email: string;
-}
-
-export interface InsertUser {
-  full_name: string;
-  email: string;
-  id_role: string;
-  password?: string;
 }
 
 export interface QueryParams {
     page?: number;
-    page_size?: number;
+    pageSize?: number;
     search?: string;
     [key: string]: any;
 }
-
 
 // --- API Endpoints ---
 
@@ -118,8 +122,6 @@ const createUrlWithParams = (baseUrl: string, params: QueryParams) => {
 export const authApi = {
   login: (data: LoginData) =>
     apiRequest("POST", `${API_BASE_URL}/auth/login`, data).then(handleResponse<ApiResponse<AuthResponse>>),
-  register: (data: InsertBulkUser) =>
-    apiRequest("POST", `${API_BASE_URL}/auth/register`, data).then(handleResponse),
   getMe: () =>
     apiRequest("GET", `${API_BASE_URL}/auth/me`).then(handleResponse<ApiResponse<User>>),
 };
@@ -140,23 +142,38 @@ export const userApi = {
         apiRequest("DELETE", `${API_BASE_URL}/users/${id}`).then(handleResponse),
 };
 
+export const dayTypeApi = {
+    getDayTypes: (params: QueryParams = {}) =>
+        apiRequest("GET", createUrlWithParams(`${API_BASE_URL}/day-types`, params)).then(handleResponse<ApiResponse<DayType[]>>),
+    createDayType: (data: Omit<DayType, 'id_day_type'>) =>
+        apiRequest("POST", `${API_BASE_URL}/day-types`, data).then(handleResponse<ApiResponse<DayType>>),
+    updateDayType: (id: string, data: Partial<Omit<DayType, 'id_day_type'>>) =>
+        apiRequest("PUT", `${API_BASE_URL}/day-types/${id}`, data).then(handleResponse<ApiResponse<DayType>>),
+    deleteDayType: (id: string) =>
+        apiRequest("DELETE", `${API_BASE_URL}/day-types/${id}`).then(handleResponse),
+};
 
-export const ticketApi = {
-    getTickets: (params: QueryParams = {}) =>
-        apiRequest("GET", createUrlWithParams(`${API_BASE_URL}/tickets`, params)).then(handleResponse<ApiResponse<Ticket[]>>),
-    createTicket: (data: Omit<Ticket, 'id_ticket'>) =>
-        apiRequest("POST", `${API_BASE_URL}/tickets`, data).then(handleResponse<ApiResponse<Ticket>>),
-    updateTicket: (id: string, data: Partial<Omit<Ticket, 'id_ticket'>>) =>
-        apiRequest("PUT", `${API_BASE_URL}/tickets/${id}`, data).then(handleResponse<ApiResponse<Ticket>>),
-    deleteTicket: (id: string) =>
-        apiRequest("DELETE", `${API_BASE_URL}/tickets/${id}`).then(handleResponse),
+export const gateApi = {
+    getGates: (params: QueryParams = {}) =>
+        apiRequest("GET", createUrlWithParams(`${API_BASE_URL}/gates`, params)).then(handleResponse<ApiResponse<Gate[]>>),
+    createGate: (data: Omit<Gate, 'id_gate'>) =>
+        apiRequest("POST", `${API_BASE_URL}/gates`, data).then(handleResponse<ApiResponse<Gate>>),
+    updateGate: (id: string, data: Partial<Omit<Gate, 'id_gate'>>) =>
+        apiRequest("PUT", `${API_BASE_URL}/gates/${id}`, data).then(handleResponse<ApiResponse<Gate>>),
+    deleteGate: (id: string) =>
+        apiRequest("DELETE", `${API_BASE_URL}/gates/${id}`).then(handleResponse),
+};
+
+export const visitorCategoryApi = {
+    getVisitorCategories: (params: QueryParams = {}) =>
+        apiRequest("GET", createUrlWithParams(`${API_BASE_URL}/visitor-categories`, params)).then(handleResponse<ApiResponse<VisitorCategory[]>>),
+};
+export const ticketPriceApi = {
+    getTicketPrices: (params: QueryParams = {}) =>
+        apiRequest("GET", createUrlWithParams(`${API_BASE_URL}/ticket-prices`, params)).then(handleResponse<ApiResponse<TicketPrice[]>>),
 };
 
 export const bookingApi = {
     getBookings: (params: QueryParams = {}) =>
         apiRequest("GET", createUrlWithParams(`${API_BASE_URL}/bookings`, params)).then(handleResponse<ApiResponse<Booking[]>>),
-    getBookingById: (id: string) =>
-        apiRequest("GET", `${API_BASE_URL}/bookings/${id}`).then(handleResponse<ApiResponse<Booking>>),
-    redeemTicket: (bookingDetailId: string) =>
-        apiRequest("POST", `${API_BASE_URL}/bookings/redeem`, { bookingDetailId }).then(handleResponse),
 };
