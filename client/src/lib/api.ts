@@ -1,4 +1,4 @@
-import { apiRequest, apiMultipartRequest } from "@/lib/queryClient";
+import { apiRequest } from "@/lib/queryClient";
 
 // --- Environment Variable Setup ---
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api';
@@ -7,7 +7,15 @@ if (!API_BASE_URL) {
 }
 
 // --- Generic API Helpers ---
-const handleResponse = <T>(res: Response): Promise<T> => res.json();
+const handleResponse = <T>(res: Response): Promise<T> => {
+    if (!res.ok) {
+        return res.json().then(errorBody => {
+            throw new Error(errorBody.meta?.message || 'An unknown error occurred');
+        });
+    }
+    return res.json();
+};
+
 
 // --- API Response Structure ---
 export interface ApiResponse<T> {
@@ -80,6 +88,14 @@ export interface TicketPrice {
     dayType: DayType;
 }
 
+export interface InsertTicketPrice {
+    id_gate: string;
+    id_category: string;
+    id_day_type: string;
+    price: number;
+    is_active?: boolean;
+}
+
 export interface Booking {
   id_booking: string;
   id_user: string;
@@ -87,7 +103,19 @@ export interface Booking {
   status: string;
   created_on: string;
   user: User;
+  bookingDetails: BookingDetail[];
 }
+
+export interface BookingDetail {
+  id_booking_detail: string;
+  id_booking: string;
+  id_ticket_price: string;
+  price_at_purchase: number;
+  used_at?: string;
+  used_by?: string;
+  ticketPrice: TicketPrice;
+}
+
 
 export interface LoginData {
   email: string;
@@ -134,6 +162,8 @@ export const roleApi = {
 export const userApi = {
     getUsers: (params: QueryParams = {}) =>
         apiRequest("GET", createUrlWithParams(`${API_BASE_URL}/users`, params)).then(handleResponse<ApiResponse<User[]>>),
+    getUserById: (id: string) =>
+        apiRequest("GET", `${API_BASE_URL}/users/${id}`).then(handleResponse<ApiResponse<User>>),
     createUser: (data: InsertUser) =>
         apiRequest("POST", `${API_BASE_URL}/users`, data).then(handleResponse<ApiResponse<User>>),
     updateUser: (id: string, data: Partial<InsertUser>) =>
@@ -156,7 +186,7 @@ export const dayTypeApi = {
 export const gateApi = {
     getGates: (params: QueryParams = {}) =>
         apiRequest("GET", createUrlWithParams(`${API_BASE_URL}/gates`, params)).then(handleResponse<ApiResponse<Gate[]>>),
-    createGate: (data: Omit<Gate, 'id_gate'>) =>
+    createGate: (data: Omit<Gate, 'id_gate' | 'is_active'> & {is_active?: boolean}) =>
         apiRequest("POST", `${API_BASE_URL}/gates`, data).then(handleResponse<ApiResponse<Gate>>),
     updateGate: (id: string, data: Partial<Omit<Gate, 'id_gate'>>) =>
         apiRequest("PUT", `${API_BASE_URL}/gates/${id}`, data).then(handleResponse<ApiResponse<Gate>>),
@@ -167,13 +197,32 @@ export const gateApi = {
 export const visitorCategoryApi = {
     getVisitorCategories: (params: QueryParams = {}) =>
         apiRequest("GET", createUrlWithParams(`${API_BASE_URL}/visitor-categories`, params)).then(handleResponse<ApiResponse<VisitorCategory[]>>),
+    createVisitorCategory: (data: Omit<VisitorCategory, 'id_category'>) =>
+        apiRequest("POST", `${API_BASE_URL}/visitor-categories`, data).then(handleResponse<ApiResponse<VisitorCategory>>),
+    updateVisitorCategory: (id: string, data: Partial<Omit<VisitorCategory, 'id_category'>>) =>
+        apiRequest("PUT", `${API_BASE_URL}/visitor-categories/${id}`, data).then(handleResponse<ApiResponse<VisitorCategory>>),
+    deleteVisitorCategory: (id: string) =>
+        apiRequest("DELETE", `${API_BASE_URL}/visitor-categories/${id}`).then(handleResponse),
 };
+
 export const ticketPriceApi = {
     getTicketPrices: (params: QueryParams = {}) =>
-        apiRequest("GET", createUrlWithParams(`${API_BASE_URL}/ticket-prices`, params)).then(handleResponse<ApiResponse<TicketPrice[]>>),
+        apiRequest("GET", createUrlWithParams(`${API_BASE_URL}/ticket-prices/all`, params)).then(handleResponse<ApiResponse<TicketPrice[]>>),
+    getTicketPriceById: (id: string) =>
+        apiRequest("GET", `${API_BASE_URL}/ticket-prices/${id}`).then(handleResponse<ApiResponse<TicketPrice>>),
+    createTicketPrice: (data: InsertTicketPrice) =>
+        apiRequest("POST", `${API_BASE_URL}/ticket-prices`, data).then(handleResponse<ApiResponse<TicketPrice>>),
+    updateTicketPrice: (id: string, data: Partial<InsertTicketPrice>) =>
+        apiRequest("PUT", `${API_BASE_URL}/ticket-prices/${id}`, data).then(handleResponse<ApiResponse<TicketPrice>>),
+    deleteTicketPrice: (id: string) =>
+        apiRequest("DELETE", `${API_BASE_URL}/ticket-prices/${id}`).then(handleResponse),
 };
 
 export const bookingApi = {
     getBookings: (params: QueryParams = {}) =>
         apiRequest("GET", createUrlWithParams(`${API_BASE_URL}/bookings`, params)).then(handleResponse<ApiResponse<Booking[]>>),
+    getBookingById: (id: string) =>
+        apiRequest("GET", `${API_BASE_URL}/bookings/${id}`).then(handleResponse<ApiResponse<Booking>>),
+    redeemBooking: (bookingDetailId: string) =>
+        apiRequest("POST", `${API_BASE_URL}/bookings/redeem`, { bookingDetailId }).then(handleResponse),
 };

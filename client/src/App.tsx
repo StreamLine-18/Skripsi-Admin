@@ -9,7 +9,12 @@ import Dashboard from "@/pages/Dashboard";
 import Login from "@/pages/Login";
 import NotFound from "@/pages/not-found";
 import Users from "@/pages/Users";
-import DayTypes from "@/pages/DayTypes"; // Import the new DayTypes page
+import DayTypes from "@/pages/DayTypes"; 
+import VisitorCategories from "@/pages/VisitorCategories";
+import TicketPrices from "./pages/TicketPrices";
+import Bookings from "@/pages/Booking";
+
+import Gates from "@/pages/Gates";
 import { authApi } from "./lib/api";
 import { useToast } from "./hooks/use-toast";
 
@@ -22,19 +27,7 @@ function FullScreenLoader() {
   );
 }
 
-// --- Placeholder Components for New Pages ---
-function Bookings() {
-  return <div className="p-4"><h1 className="text-2xl font-bold">Bookings</h1><p>Under construction.</p></div>;
-}
-function TicketPrices() {
-  return <div className="p-4"><h1 className="text-2xl font-bold">Ticket Prices</h1><p>Under construction.</p></div>;
-}
-function Gates() {
-  return <div className="p-4"><h1 className="text-2xl font-bold">Gates</h1><p>Under construction.</p></div>;
-}
-function VisitorCategories() {
-  return <div className="p-4"><h1 className="text-2xl font-bold">Visitor Categories</h1><p>Under construction.</p></div>;
-}
+
 
 
 // --- Component for Public Routes ---
