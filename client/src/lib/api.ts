@@ -207,7 +207,7 @@ export const visitorCategoryApi = {
 
 export const ticketPriceApi = {
     getTicketPrices: (params: QueryParams = {}) =>
-        apiRequest("GET", createUrlWithParams(`${API_BASE_URL}/ticket-prices/all`, params)).then(handleResponse<ApiResponse<TicketPrice[]>>),
+        apiRequest("GET", createUrlWithParams(`${API_BASE_URL}/ticket-prices`, params)).then(handleResponse<ApiResponse<TicketPrice[]>>),
     getTicketPriceById: (id: string) =>
         apiRequest("GET", `${API_BASE_URL}/ticket-prices/${id}`).then(handleResponse<ApiResponse<TicketPrice>>),
     createTicketPrice: (data: InsertTicketPrice) =>
@@ -223,6 +223,7 @@ export const bookingApi = {
         apiRequest("GET", createUrlWithParams(`${API_BASE_URL}/bookings`, params)).then(handleResponse<ApiResponse<Booking[]>>),
     getBookingById: (id: string) =>
         apiRequest("GET", `${API_BASE_URL}/bookings/${id}`).then(handleResponse<ApiResponse<Booking>>),
+    // This function sends the POST request to your redeem endpoint with the correct body
     redeemBooking: (bookingDetailId: string) =>
         apiRequest("POST", `${API_BASE_URL}/bookings/redeem`, { bookingDetailId }).then(handleResponse),
 };

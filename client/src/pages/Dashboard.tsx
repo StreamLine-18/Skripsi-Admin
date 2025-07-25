@@ -1,15 +1,17 @@
 import { useQuery } from "@tanstack/react-query";
-import { Users, Ticket, ClipboardList, DollarSign } from "lucide-react";
+import { Users, Ticket, ClipboardList, DollarSign, QrCode } from "lucide-react";
 import { StatsCard } from "@/components/ui/stats-card";
 import { DataTable } from "@/components/ui/data-table";
 import { 
     userApi,
-    ticketPriceApi, // Updated from ticketApi to ticketPriceApi
+    ticketPriceApi,
     bookingApi,
 } from "@/lib/api";
 import type { User, TicketPrice, Booking } from "@/lib/api";
 import { useMemo } from "react";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Link } from "wouter";
 
 export default function Dashboard() {
 
@@ -33,7 +35,6 @@ export default function Dashboard() {
     const ticketPrices = Array.isArray(ticketPricesResponse?.data) ? ticketPricesResponse.data : [];
     const bookings = Array.isArray(bookingsResponse?.data) ? bookingsResponse.data : [];
     
-    // Calculate total revenue from successful bookings
     const totalRevenue = bookings
       .filter(b => b.status === 'paid')
       .reduce((sum, booking) => sum + Number(booking.total_amount), 0);
@@ -102,7 +103,7 @@ export default function Dashboard() {
   const isLoading = isLoadingUsers || isLoadingTicketPrices || isLoadingBookings;
 
   return (
-    <div>
+    <div className="p-4 md:p-6">
       {/* Page Header */}
       <div className="md:flex md:items-center md:justify-between">
         <div className="flex-1 min-w-0">
@@ -113,35 +114,23 @@ export default function Dashboard() {
             Welcome back! Here's a summary of your ticketing activity.
           </p>
         </div>
+        <div className="mt-4 flex md:mt-0 md:ml-4">
+            <Link href="/qr-scanner">
+                <Button>
+                    <QrCode className="h-4 w-4 mr-2" />
+                    Scan Ticket
+                </Button>
+            </Link>
+        </div>
       </div>
 
       {/* Stats Grid */}
       <div className="mt-8">
         <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
-          <StatsCard
-            title="Total Visitors"
-            value={stats.totalVisitors}
-            icon={Users}
-            iconColor="bg-blue-500"
-          />
-          <StatsCard
-            title="Ticket Prices"
-            value={stats.totalTicketPrices}
-            icon={Ticket}
-            iconColor="bg-purple-500"
-          />
-          <StatsCard
-            title="Total Bookings"
-            value={stats.totalBookings}
-            icon={ClipboardList}
-            iconColor="bg-amber-500"
-          />
-          <StatsCard
-            title="Total Revenue"
-            value={new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR' }).format(stats.totalRevenue)}
-            icon={DollarSign}
-            iconColor="bg-emerald-500"
-          />
+          <StatsCard title="Total Visitors" value={stats.totalVisitors} icon={Users} iconColor="bg-blue-500" />
+          <StatsCard title="Ticket Prices" value={stats.totalTicketPrices} icon={Ticket} iconColor="bg-purple-500" />
+          <StatsCard title="Total Bookings" value={stats.totalBookings} icon={ClipboardList} iconColor="bg-amber-500" />
+          <StatsCard title="Total Revenue" value={new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR' }).format(stats.totalRevenue)} icon={DollarSign} iconColor="bg-emerald-500" />
         </div>
       </div>
 

@@ -13,7 +13,7 @@ import {
 import { cn } from "@/lib/utils";
 import { useQuery } from "@tanstack/react-query";
 import { authApi } from "@/lib/api";
-import logo from '@/assets/images/logo_white.png';
+import logo from '@/assets/images/logo.png';
 
 interface SidebarProps {
   isOpen: boolean;

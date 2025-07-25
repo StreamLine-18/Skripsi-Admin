@@ -13,7 +13,8 @@ import DayTypes from "@/pages/DayTypes";
 import VisitorCategories from "@/pages/VisitorCategories";
 import TicketPrices from "./pages/TicketPrices";
 import Bookings from "@/pages/Booking";
-
+import BookingDetail from "@/pages/BookingDetail";
+import QrScanner from "./pages/QrScanner";
 import Gates from "@/pages/Gates";
 import { authApi } from "./lib/api";
 import { useToast } from "./hooks/use-toast";
@@ -51,6 +52,8 @@ function ProtectedRoutes() {
         <Route path="/ticket-prices" component={TicketPrices} /> 
         <Route path="/day-types" component={DayTypes} /> 
         <Route path="/gates" component={Gates} /> 
+        <Route path="/qr-scanner" component={QrScanner} />
+        <Route path="/bookings/:id" component={BookingDetail} />
         <Route path="/visitor-categories" component={VisitorCategories} /> 
         <Route path="/login"><Redirect to="/" /></Route>
         <Route component={NotFound} />
