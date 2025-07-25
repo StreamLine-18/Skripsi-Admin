@@ -22,28 +22,30 @@ export default function QrScanner() {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // --- Redemption Logic ---
-  const redeemMutation = useMutation<{data: BookingDetail}, Error, string>({
-    mutationFn: async (bookingDetailId: string) => {
-      const response = await bookingApi.redeemBooking(bookingDetailId);
-      return response as {data: BookingDetail};
-    },
-    onSuccess: (response) => {
+  const redeemMutation = useMutation<{ data: BookingDetail }, Error, string>({
+    mutationFn: (bookingDetailId: string) => bookingApi.redeemBooking(bookingDetailId) as Promise<{ data: BookingDetail }>,
+    onSuccess: (response: { data: BookingDetail }) => {
       const redeemedDetail: BookingDetail = response.data;
       const parentBookingId = redeemedDetail.id_booking;
 
       toast({ title: "Success!", description: "Ticket has been successfully redeemed." });
       
-      // Invalidate queries to ensure data is fresh if the user navigates back
       queryClient.invalidateQueries({ queryKey: ["booking", parentBookingId] });
       queryClient.invalidateQueries({ queryKey: ["bookings"] });
 
-      // Redirect to the parent booking's detail page
       setTimeout(() => {
         setLocation(`/bookings/${parentBookingId}`);
       }, 1000);
     },
     onError: (error: any) => {
-      toast({ title: "Redemption Failed", description: error.message, variant: "destructive" });
+      // Improved error handling to show specific messages
+      const isAlreadyRedeemed = error.message?.toLowerCase().includes('Ticket already used');
+      
+      toast({ 
+        title: isAlreadyRedeemed ? "Ticket Already Redeemed" : "Redemption Failed", 
+        description: error.message, 
+        variant: "destructive" 
+      });
       resetScanner();
     },
     onSettled: () => {
@@ -77,7 +79,7 @@ export default function QrScanner() {
     }
     setMode("idle");
     setScanResult(decodedText);
-    setIsConfirmModalOpen(true); // Show confirmation modal instead of redirecting
+    setIsConfirmModalOpen(true);
   };
 
   const startCameraScan = (cameraId: string) => {

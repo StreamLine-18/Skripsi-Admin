@@ -116,6 +116,12 @@ export interface BookingDetail {
   ticketPrice: TicketPrice;
 }
 
+export interface OnsiteBookingPayload {
+    ticketOrders: {
+        id_ticket_price: string;
+        quantity: number;
+    }[];
+}
 
 export interface LoginData {
   email: string;
@@ -223,7 +229,10 @@ export const bookingApi = {
         apiRequest("GET", createUrlWithParams(`${API_BASE_URL}/bookings`, params)).then(handleResponse<ApiResponse<Booking[]>>),
     getBookingById: (id: string) =>
         apiRequest("GET", `${API_BASE_URL}/bookings/${id}`).then(handleResponse<ApiResponse<Booking>>),
-    // This function sends the POST request to your redeem endpoint with the correct body
+    getBookingDetailById: (id: string) => // New function to get ticket details
+        apiRequest("GET", `${API_BASE_URL}/booking-details/${id}`).then(handleResponse<ApiResponse<BookingDetail>>),
     redeemBooking: (bookingDetailId: string) =>
         apiRequest("POST", `${API_BASE_URL}/bookings/redeem`, { bookingDetailId }).then(handleResponse),
+    createOnsiteBooking: (data: OnsiteBookingPayload) => // New function for onsite sales
+        apiRequest("POST", `${API_BASE_URL}/bookings/onsite`, data).then(handleResponse<ApiResponse<Booking>>),
 };

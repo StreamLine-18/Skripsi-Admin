@@ -16,6 +16,7 @@ import Bookings from "@/pages/Booking";
 import BookingDetail from "@/pages/BookingDetail";
 import QrScanner from "./pages/QrScanner";
 import Gates from "@/pages/Gates";
+import OnsiteBooking from "./pages/OnsiteBooking";
 import { authApi } from "./lib/api";
 import { useToast } from "./hooks/use-toast";
 
@@ -55,6 +56,7 @@ function ProtectedRoutes() {
         <Route path="/qr-scanner" component={QrScanner} />
         <Route path="/bookings/:id" component={BookingDetail} />
         <Route path="/visitor-categories" component={VisitorCategories} /> 
+        <Route path="/onsite-booking" component={OnsiteBooking} />
         <Route path="/login"><Redirect to="/" /></Route>
         <Route component={NotFound} />
       </Switch>
