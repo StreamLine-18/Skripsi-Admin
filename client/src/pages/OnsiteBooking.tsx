@@ -38,6 +38,17 @@ export default function OnsiteBooking() {
   const dayTypes: DayType[] = dayTypesResponse?.data || [];
   const availableTickets: TicketPrice[] = ticketPricesResponse?.data || [];
 
+  // --- State Handlers ---
+  const handleGateChange = (gateId: string) => {
+    setSelectedGate(gateId);
+    setCart([]); // Clear cart for a better user experience
+  };
+
+  const handleDayTypeChange = (dayTypeId: string) => {
+    setSelectedDayType(dayTypeId);
+    setCart([]); // Clear cart for a better user experience
+  };
+
   // --- Cart Logic ---
   const addToCart = (ticket: TicketPrice) => {
     setCart(prev => {
@@ -106,17 +117,18 @@ export default function OnsiteBooking() {
                 </CardHeader>
                 <CardContent>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
-                        <Select value={selectedGate} onValueChange={setSelectedGate}>
+                        <Select value={selectedGate} onValueChange={handleGateChange}>
                             <SelectTrigger><SelectValue placeholder="Select an Entrance Gate" /></SelectTrigger>
                             <SelectContent>{gates.map(gate => <SelectItem key={gate.id_gate} value={gate.id_gate}>{gate.name}</SelectItem>)}</SelectContent>
                         </Select>
-                        <Select value={selectedDayType} onValueChange={setSelectedDayType}>
+                        <Select value={selectedDayType} onValueChange={handleDayTypeChange}>
                             <SelectTrigger><SelectValue placeholder="Select a Day Type" /></SelectTrigger>
                             <SelectContent>{dayTypes.map(dt => <SelectItem key={dt.id_day_type} value={dt.id_day_type}>{dt.name}</SelectItem>)}</SelectContent>
                         </Select>
                     </div>
                     <Separator />
-                    <div className="mt-4 space-y-3">
+                    {/* FIX: Added a key to this div to force a re-render when filters change */}
+                    <div key={`${selectedGate}-${selectedDayType}`} className="mt-4 space-y-3">
                         {isLoadingPrices && <div className="text-center p-4 text-muted-foreground">Loading tickets...</div>}
                         {!isLoadingPrices && availableTickets.length === 0 && selectedGate && selectedDayType && (
                             <div className="text-center p-4 text-muted-foreground">No active tickets found for this selection.</div>

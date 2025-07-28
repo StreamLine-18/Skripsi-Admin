@@ -16,7 +16,7 @@ import {
 import { cn } from "@/lib/utils";
 import { useQuery } from "@tanstack/react-query";
 import { authApi } from "@/lib/api";
-import logo from '@/assets/images/logo_white.png'; // Using the white logo for better contrast
+import logo from '@/assets/images/logo.png'; // Using the white logo for better contrast
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 
 
@@ -75,7 +75,7 @@ export default function Sidebar({ isOpen, onClose, isMobile }: SidebarProps) {
         <div>
           {/* FIX: Removed flex-1 from both <nav> elements to remove the large space */}
           <nav className="px-2 space-y-1">
-            <h3 className="px-3 text-xs font-semibold text-sidebar-foreground tracking-wider uppercase">Main</h3>
+            <h3 className="px-3 text-xs font-semibold text-sidebar-foreground tracking-wider">Main</h3>
             {navigationMenu.map((item) => {
               const Icon = item.icon;
               const isParentActive = item.subItems?.some(sub => location === sub.href);
@@ -90,7 +90,7 @@ export default function Sidebar({ isOpen, onClose, isMobile }: SidebarProps) {
                        </div>
                        <ChevronRight className={cn("w-4 h-4 transition-transform", openMenu === item.name && "rotate-90")} />
                     </CollapsibleTrigger>
-                    <CollapsibleContent className="pl-6 space-y-1">
+                    <CollapsibleContent className="pl-6 space-y-1 mt-1">
                       {item.subItems.map(subItem => {
                           const SubIcon = subItem.icon;
                           const isSubActive = location === subItem.href;
@@ -116,7 +116,7 @@ export default function Sidebar({ isOpen, onClose, isMobile }: SidebarProps) {
             })}
           </nav>
           <nav className="mt-4 px-2 space-y-1">
-            <h3 className="px-3 text-xs font-semibold text-sidebar-foreground tracking-wider uppercase">Master Data</h3>
+            <h3 className="px-3 text-xs font-semibold text-sidebar-foreground tracking-wider ">Master Data</h3>
             {masterDataItems.map((item) => {
               const Icon = item.icon;
               const isActive = location === item.href;
