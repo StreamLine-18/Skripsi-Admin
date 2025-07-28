@@ -50,9 +50,9 @@ export default function Bookings() {
       label: "Status",
       render: (booking: Booking) => {
         let colorClass = "bg-slate-100 text-slate-800";
-        if (booking.status === 'success') colorClass = "bg-emerald-100 text-emerald-800";
-        if (booking.status === 'pending') colorClass = "bg-amber-100 text-amber-800";
-        if (booking.status === 'cancel' || booking.status === 'expired' || booking.status === 'deny') colorClass = "bg-red-100 text-red-800";
+        if (booking.status === 'Success') colorClass = "bg-emerald-100 text-emerald-800";
+        if (booking.status === 'Pending') colorClass = "bg-amber-100 text-amber-800";
+        if (booking.status === 'Canceled' || booking.status === 'Expired' || booking.status === 'Denied') colorClass = "bg-red-100 text-red-800";
         
         return <Badge className={colorClass}>{booking.status}</Badge>;
       }

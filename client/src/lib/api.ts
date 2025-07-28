@@ -213,7 +213,7 @@ export const visitorCategoryApi = {
 
 export const ticketPriceApi = {
     getTicketPrices: (params: QueryParams = {}) =>
-        apiRequest("GET", createUrlWithParams(`${API_BASE_URL}/ticket-prices`, params)).then(handleResponse<ApiResponse<TicketPrice[]>>),
+        apiRequest("GET", createUrlWithParams(`${API_BASE_URL}/ticket-prices/all`, params)).then(handleResponse<ApiResponse<TicketPrice[]>>),
     getTicketPriceById: (id: string) =>
         apiRequest("GET", `${API_BASE_URL}/ticket-prices/${id}`).then(handleResponse<ApiResponse<TicketPrice>>),
     createTicketPrice: (data: InsertTicketPrice) =>
