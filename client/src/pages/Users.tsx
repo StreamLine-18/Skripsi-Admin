@@ -100,11 +100,18 @@ export default function Users() {
     {
       key: "role",
       label: "Role",
-      render: (user: User) => (
-        <Badge variant={user.role?.name === "admin" ? "destructive" : "secondary"}>
-          {user.role?.name}
-        </Badge>
-      ),
+      render: (user: User) => {
+        const displayRole = user.role?.name
+          ? user.role.name.charAt(0).toUpperCase() + user.role.name.slice(1)
+          : "";
+
+        return (
+          <Badge variant={user.role?.name === "admin" ? "destructive" : "secondary"}>
+            {displayRole}
+          </Badge>
+        );
+      },
+
     },
   ];
 
@@ -171,7 +178,7 @@ export default function Users() {
         </div>
       )}
 
-      <UserForm 
+      <UserForm
         open={isFormOpen}
         onOpenChange={setIsFormOpen}
         user={selectedUser}

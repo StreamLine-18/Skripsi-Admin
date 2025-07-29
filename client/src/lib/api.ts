@@ -104,6 +104,7 @@ export interface Booking {
   created_on: string;
   user: User;
   bookingDetails: BookingDetail[];
+  payment_gateway_token?: string;
 }
 
 export interface BookingDetail {

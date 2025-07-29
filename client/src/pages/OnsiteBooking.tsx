@@ -1,10 +1,11 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { useToast } from "@/hooks/use-toast";
 import { gateApi, dayTypeApi, ticketPriceApi, bookingApi } from "@/lib/api";
 import type { Gate, DayType, TicketPrice } from "@/lib/api";
@@ -20,8 +21,15 @@ export default function OnsiteBooking() {
   const [cart, setCart] = useState<CartItem[]>([]);
 
   // --- Data Fetching ---
-  const { data: gatesResponse } = useQuery({ queryKey: ["gates", "all"], queryFn: () => gateApi.getGates({ pageSize: 999 }) });
-  const { data: dayTypesResponse } = useQuery({ queryKey: ["dayTypes", "all"], queryFn: () => dayTypeApi.getDayTypes({ pageSize: 999 }) });
+  const { data: gatesResponse } = useQuery({ 
+    queryKey: ["gates", "all"], 
+    queryFn: () => gateApi.getGates({ pageSize: 999 }) 
+  });
+  
+  const { data: dayTypesResponse } = useQuery({ 
+    queryKey: ["dayTypes", "all"], 
+    queryFn: () => dayTypeApi.getDayTypes({ pageSize: 999 }) 
+  });
   
   const { data: ticketPricesResponse, isLoading: isLoadingPrices } = useQuery({
     queryKey: ["ticketPrices", selectedGate, selectedDayType],
@@ -38,15 +46,33 @@ export default function OnsiteBooking() {
   const dayTypes: DayType[] = dayTypesResponse?.data || [];
   const availableTickets: TicketPrice[] = ticketPricesResponse?.data || [];
 
+  // --- Auto-select Day Type based on the current day ---
+  useEffect(() => {
+    if (dayTypes.length > 0 && !selectedDayType) {
+      const today = new Date().getDay(); // 0 = Sunday, 6 = Saturday
+      const isWeekend = today === 0 || today === 6;
+      
+      const defaultDayType = dayTypes.find(dt => 
+        isWeekend 
+          ? dt.name.toLowerCase().includes('weekend') 
+          : dt.name.toLowerCase().includes('weekday')
+      );
+      
+      if (defaultDayType) {
+        setSelectedDayType(defaultDayType.id_day_type);
+      }
+    }
+  }, [dayTypes, selectedDayType]);
+
   // --- State Handlers ---
   const handleGateChange = (gateId: string) => {
     setSelectedGate(gateId);
-    setCart([]); // Clear cart for a better user experience
+    setCart([]);
   };
 
   const handleDayTypeChange = (dayTypeId: string) => {
     setSelectedDayType(dayTypeId);
-    setCart([]); // Clear cart for a better user experience
+    setCart([]);
   };
 
   // --- Cart Logic ---
@@ -119,30 +145,55 @@ export default function OnsiteBooking() {
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
                         <Select value={selectedGate} onValueChange={handleGateChange}>
                             <SelectTrigger><SelectValue placeholder="Select an Entrance Gate" /></SelectTrigger>
-                            <SelectContent>{gates.map(gate => <SelectItem key={gate.id_gate} value={gate.id_gate}>{gate.name}</SelectItem>)}</SelectContent>
+                            <SelectContent className="max-h-60 overflow-y-auto">
+                                {gates.map(gate => (
+                                    <SelectItem key={gate.id_gate} value={gate.id_gate}>
+                                        {gate.name}
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
                         </Select>
                         <Select value={selectedDayType} onValueChange={handleDayTypeChange}>
                             <SelectTrigger><SelectValue placeholder="Select a Day Type" /></SelectTrigger>
-                            <SelectContent>{dayTypes.map(dt => <SelectItem key={dt.id_day_type} value={dt.id_day_type}>{dt.name}</SelectItem>)}</SelectContent>
+                            <SelectContent className="max-h-60 overflow-y-auto">
+                                {dayTypes.map(dt => (
+                                    <SelectItem key={dt.id_day_type} value={dt.id_day_type}>
+                                        {dt.name}
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
                         </Select>
                     </div>
                     <Separator />
-                    {/* FIX: Added a key to this div to force a re-render when filters change */}
-                    <div key={`${selectedGate}-${selectedDayType}`} className="mt-4 space-y-3">
-                        {isLoadingPrices && <div className="text-center p-4 text-muted-foreground">Loading tickets...</div>}
-                        {!isLoadingPrices && availableTickets.length === 0 && selectedGate && selectedDayType && (
-                            <div className="text-center p-4 text-muted-foreground">No active tickets found for this selection.</div>
-                        )}
-                        {availableTickets.map(ticket => (
-                            <div key={ticket.id_ticket_price} className="flex items-center justify-between p-3 rounded-lg bg-slate-50 border">
-                                <div>
-                                    <p className="font-semibold">{ticket.category.name}</p>
-                                    <p className="text-sm text-muted-foreground">{new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR' }).format(Number(ticket.price))}</p>
-                                </div>
-                                <Button size="sm" onClick={() => addToCart(ticket)}>Add to Cart</Button>
+                    <ScrollArea className="h-[400px] mt-4 pr-4">
+                      <div key={`${selectedGate}-${selectedDayType}`} className="space-y-3">
+                          {isLoadingPrices && (
+                            <div className="text-center p-4 text-muted-foreground flex items-center justify-center">
+                                <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Loading tickets...
                             </div>
-                        ))}
-                    </div>
+                          )}
+                          {!isLoadingPrices && !selectedGate && (
+                            <div className="text-center p-4 text-muted-foreground">Please select an entrance gate.</div>
+                          )}
+                           {!isLoadingPrices && selectedGate && !selectedDayType && (
+                            <div className="text-center p-4 text-muted-foreground">Please select a day type.</div>
+                          )}
+                          {!isLoadingPrices && availableTickets.length === 0 && selectedGate && selectedDayType && (
+                              <div className="text-center p-4 text-muted-foreground">No active tickets found for this selection.</div>
+                          )}
+                          {availableTickets.map(ticket => (
+                              <div key={ticket.id_ticket_price} className="flex items-center justify-between p-3 rounded-lg bg-slate-50 border hover:bg-slate-100 transition-colors">
+                                  <div>
+                                      <p className="font-semibold">{ticket.category.name}</p>
+                                      <p className="text-sm text-muted-foreground">{new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR' }).format(Number(ticket.price))}</p>
+                                  </div>
+                                  <Button size="sm" onClick={() => addToCart(ticket)}>
+                                    <PlusCircle className="h-4 w-4 mr-2" /> Add
+                                  </Button>
+                              </div>
+                          ))}
+                      </div>
+                    </ScrollArea>
                 </CardContent>
             </Card>
         </div>
@@ -161,27 +212,31 @@ export default function OnsiteBooking() {
                             <p className="mt-2 text-sm">Your cart is empty</p>
                         </div>
                     ) : (
-                        <div className="space-y-4">
-                            {cart.map(item => (
-                                <div key={item.id_ticket_price} className="flex items-start justify-between">
-                                    <div>
-                                        <p className="font-medium text-sm">{item.category.name}</p>
-                                        <p className="text-xs text-muted-foreground">{new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR' }).format(Number(item.price))}</p>
-                                        <div className="flex items-center gap-2 mt-2">
-                                            <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => updateQuantity(item.id_ticket_price, item.quantity - 1)}><MinusCircle className="h-4 w-4"/></Button>
-                                            <span className="text-sm font-semibold w-4 text-center">{item.quantity}</span>
-                                            <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => updateQuantity(item.id_ticket_price, item.quantity + 1)}><PlusCircle className="h-4 w-4"/></Button>
-                                        </div>
-                                    </div>
-                                    <Button variant="ghost" size="icon" className="h-6 w-6 text-red-500" onClick={() => removeFromCart(item.id_ticket_price)}><X className="h-4 w-4"/></Button>
-                                </div>
-                            ))}
-                            <Separator />
-                            <div className="flex justify-between items-center font-bold text-lg">
-                                <span>Total:</span>
-                                <span>{new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR' }).format(totalAmount)}</span>
-                            </div>
+                      <>
+                        <ScrollArea className="h-[250px] pr-4">
+                          <div className="space-y-4">
+                              {cart.map(item => (
+                                  <div key={item.id_ticket_price} className="flex items-start justify-between">
+                                      <div>
+                                          <p className="font-medium text-sm">{item.category.name}</p>
+                                          <p className="text-xs text-muted-foreground">{new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR' }).format(Number(item.price))}</p>
+                                          <div className="flex items-center gap-2 mt-2">
+                                              <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => updateQuantity(item.id_ticket_price, item.quantity - 1)}><MinusCircle className="h-4 w-4"/></Button>
+                                              <span className="text-sm font-semibold w-4 text-center">{item.quantity}</span>
+                                              <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => updateQuantity(item.id_ticket_price, item.quantity + 1)}><PlusCircle className="h-4 w-4"/></Button>
+                                          </div>
+                                      </div>
+                                      <Button variant="ghost" size="icon" className="h-6 w-6 text-red-500" onClick={() => removeFromCart(item.id_ticket_price)}><X className="h-4 w-4"/></Button>
+                                  </div>
+                              ))}
+                          </div>
+                        </ScrollArea>
+                        <Separator className="my-4" />
+                        <div className="flex justify-between items-center font-bold text-lg">
+                            <span>Total:</span>
+                            <span>{new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR' }).format(totalAmount)}</span>
                         </div>
+                      </>
                     )}
                     
                     <Separator className="my-6" />

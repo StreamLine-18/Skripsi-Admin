@@ -58,6 +58,16 @@ export default function Bookings() {
       }
     },
     {
+      key: "method",
+      label: "Payment Method",
+      render: (booking: Booking) => {
+        if (booking.payment_gateway_token) {
+          return <Badge className="bg-emerald-100 text-emerald-800">Online</Badge>;
+        }
+        return <Badge className=" bg-amber-100 text-amber-800">On-Site</Badge>;
+      }
+    },
+    {
       key: "date",
       label: "Date",
       render: (booking: Booking) => new Date(booking.created_on).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })

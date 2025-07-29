@@ -34,13 +34,13 @@ export function BookingDetailCard({ booking, onRedeemClick }: BookingDetailCardP
 
     const getStatusBadge = (status: string) => {
         switch (status) {
-            case 'success':
+            case 'Success':
                 return <Badge className="bg-emerald-100 text-emerald-800">Paid</Badge>;
-            case 'pending':
+            case 'Pending':
                 return <Badge className="bg-amber-100 text-amber-800">Pending</Badge>;
-            case 'failure':
+            case 'Failure':
                 return <Badge className="bg-red-100 text-red-800">Failed</Badge>;
-            case 'expired':
+            case 'Expired':
                 return <Badge className="bg-red-100 text-red-800">Expired</Badge>;
             default:
                 return <Badge variant="secondary">{status}</Badge>;
@@ -96,7 +96,7 @@ export function BookingDetailCard({ booking, onRedeemClick }: BookingDetailCardP
                                     <Button 
                                         size="sm" 
                                         onClick={() => onRedeemClick(detail.id_booking_detail)}
-                                        disabled={booking.status !== 'success'}
+                                        disabled={booking.status !== 'Success'}
                                         className="w-full"
                                     >
                                         <Ticket className="w-4 h-4 mr-2"/>
