@@ -141,6 +141,29 @@ export interface QueryParams {
     [key: string]: any;
 }
 
+// --- Dashboard Specific Types ---
+export interface DashboardStats {
+    totalRevenue: number;
+    totalVisitors: number;
+    totalBookings: number;
+    totalTicketPrices: number;
+}
+
+export interface SalesChartDataPoint {
+    date: string;
+    total: number;
+}
+
+export interface DashboardData {
+    stats: DashboardStats;
+    recentBookings: Booking[];
+    charts: {
+        salesLast7Days: SalesChartDataPoint[];
+        salesLast30Days: SalesChartDataPoint[];
+    };
+}
+
+
 // --- API Endpoints ---
 
 const createUrlWithParams = (baseUrl: string, params: QueryParams) => {
@@ -236,4 +259,9 @@ export const bookingApi = {
         apiRequest("POST", `${API_BASE_URL}/bookings/redeem`, { bookingDetailId }).then(handleResponse),
     createOnsiteBooking: (data: OnsiteBookingPayload) => // New function for onsite sales
         apiRequest("POST", `${API_BASE_URL}/bookings/onsite`, data).then(handleResponse<ApiResponse<Booking>>),
+};
+
+export const dashboardApi = {
+    getSummary: () =>
+        apiRequest("GET", `${API_BASE_URL}/dashboard`).then(handleResponse<ApiResponse<DashboardData>>),
 };
