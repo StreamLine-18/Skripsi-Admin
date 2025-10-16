@@ -1,4 +1,4 @@
-import { apiRequest } from "@/lib/queryClient";
+import { apiMultipartRequest, apiRequest } from "@/lib/queryClient";
 
 // --- Environment Variable Setup ---
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api';
@@ -141,6 +141,18 @@ export interface QueryParams {
     [key: string]: any;
 }
 
+export interface News {
+  id_news: string;
+  title: string;
+  content: string;
+  image_url: string;
+  status: string;
+  published_at?: string;
+  author_name: string;
+  created_on: string;
+  updated_on: string;
+}
+
 // --- Dashboard Specific Types ---
 export interface DashboardStats {
     totalRevenue: number;
@@ -253,7 +265,7 @@ export const bookingApi = {
         apiRequest("GET", createUrlWithParams(`${API_BASE_URL}/admin/bookings`, params)).then(handleResponse<ApiResponse<Booking[]>>),
     getBookingById: (id: string) =>
         apiRequest("GET", `${API_BASE_URL}/public/bookings/${id}`).then(handleResponse<ApiResponse<Booking>>),
-    getBookingDetailById: (id: string) => // New function to get ticket details
+    getBookingDetailById: (id: string) => 
         apiRequest("GET", `${API_BASE_URL}/admin/booking-details/${id}`).then(handleResponse<ApiResponse<BookingDetail>>),
     redeemBooking: (bookingDetailId: string) =>
         apiRequest("POST", `${API_BASE_URL}/admin/bookings/redeem`, { bookingDetailId }).then(handleResponse),
@@ -264,4 +276,17 @@ export const bookingApi = {
 export const dashboardApi = {
     getSummary: () =>
         apiRequest("GET", `${API_BASE_URL}/admin/dashboard`).then(handleResponse<ApiResponse<DashboardData>>),
+};
+
+export const newsApi = {
+    getAllNews: (params: QueryParams = {}) =>
+        apiRequest("GET", createUrlWithParams(`${API_BASE_URL}/admin/news`, params)).then(handleResponse<ApiResponse<News[]>>),
+    getNewsById: (id: string) =>
+        apiRequest("GET", `${API_BASE_URL}/admin/news/${id}`).then(handleResponse<ApiResponse<News>>),
+    createNews: (data: FormData) =>
+        apiMultipartRequest("POST", `${API_BASE_URL}/admin/news`, data).then(handleResponse<ApiResponse<News>>),
+    updateNews: (id: string, data: FormData) =>
+        apiMultipartRequest("PUT", `${API_BASE_URL}/admin/news/${id}`, data).then(handleResponse<ApiResponse<News>>),
+    deleteNews: (id: string) =>
+        apiRequest("DELETE", `${API_BASE_URL}/admin/news/${id}`).then(handleResponse),
 };

@@ -11,7 +11,8 @@ import {
   DoorOpen,
   UsersRound,
   ChevronRight,
-  Store
+  Store,
+  Newspaper
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useQuery } from "@tanstack/react-query";
@@ -37,6 +38,7 @@ const navigationMenu = [
     ],
   },
   { name: "Users", href: "/users", icon: Users },
+  { name: "News", href: "/news", icon: Newspaper },
 ];
 
 const masterDataItems = [
