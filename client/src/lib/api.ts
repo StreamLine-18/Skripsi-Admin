@@ -61,6 +61,8 @@ export interface Gate {
     id_gate: string;
     name: string;
     description?: string;
+    image_url?: string; 
+    location?: string;   
     is_active: boolean;
 }
 
@@ -153,6 +155,37 @@ export interface News {
   updated_on: string;
 }
 
+export interface Event {
+  id_event: string;
+  title: string;
+  content: string;
+  image_url: string;
+  event_date: string;
+  location: string;
+  status: string;
+  published_at?: string;
+  author_name: string;
+  created_on: string;
+  updated_on: string;
+}
+
+export interface Destination {
+  id_destination: string;
+  id_gate: string;
+  name: string;
+  slug: string;
+  description?: string;
+  image_url: string;
+  features?: string;
+  facilities?: string;
+  created_on: string;
+  updated_on: string;
+  gate?: { // Untuk menampilkan nama gate di tabel
+      id_gate: string;
+      name: string;
+  }
+}
+
 // --- Dashboard Specific Types ---
 export interface DashboardStats {
     totalRevenue: number;
@@ -228,10 +261,10 @@ export const dayTypeApi = {
 export const gateApi = {
     getGates: (params: QueryParams = {}) =>
         apiRequest("GET", createUrlWithParams(`${API_BASE_URL}/admin/gates`, params)).then(handleResponse<ApiResponse<Gate[]>>),
-    createGate: (data: Omit<Gate, 'id_gate' | 'is_active'> & {is_active?: boolean}) =>
-        apiRequest("POST", `${API_BASE_URL}/admin/gates`, data).then(handleResponse<ApiResponse<Gate>>),
-    updateGate: (id: string, data: Partial<Omit<Gate, 'id_gate'>>) =>
-        apiRequest("PUT", `${API_BASE_URL}/admin/gates/${id}`, data).then(handleResponse<ApiResponse<Gate>>),
+    createGate: (data: FormData) =>
+        apiMultipartRequest("POST", `${API_BASE_URL}/admin/gates`, data).then(handleResponse<ApiResponse<Gate>>),
+    updateGate: (id: string, data: FormData) =>
+        apiMultipartRequest("PUT", `${API_BASE_URL}/admin/gates/${id}`, data).then(handleResponse<ApiResponse<Gate>>),
     deleteGate: (id: string) =>
         apiRequest("DELETE", `${API_BASE_URL}/admin/gates/${id}`).then(handleResponse),
 };
@@ -289,4 +322,30 @@ export const newsApi = {
         apiMultipartRequest("PUT", `${API_BASE_URL}/admin/news/${id}`, data).then(handleResponse<ApiResponse<News>>),
     deleteNews: (id: string) =>
         apiRequest("DELETE", `${API_BASE_URL}/admin/news/${id}`).then(handleResponse),
+};
+
+export const eventApi = {
+    getAllEvents: (params: QueryParams = {}) =>
+        apiRequest("GET", createUrlWithParams(`${API_BASE_URL}/admin/events`, params)).then(handleResponse<ApiResponse<Event[]>>),
+    getEventById: (id: string) =>
+        apiRequest("GET", `${API_BASE_URL}/admin/events/${id}`).then(handleResponse<ApiResponse<Event>>),
+    createEvent: (data: FormData) =>
+        apiMultipartRequest("POST", `${API_BASE_URL}/admin/events`, data).then(handleResponse<ApiResponse<Event>>),
+    updateEvent: (id: string, data: FormData) =>
+        apiMultipartRequest("PUT", `${API_BASE_URL}/admin/events/${id}`, data).then(handleResponse<ApiResponse<Event>>),
+    deleteEvent: (id: string) =>
+        apiRequest("DELETE", `${API_BASE_URL}/admin/events/${id}`).then(handleResponse),
+};
+
+export const destinationApi = {
+    getAllDestinations: (params: QueryParams = {}) =>
+        apiRequest("GET", createUrlWithParams(`${API_BASE_URL}/admin/destinations`, params)).then(handleResponse<ApiResponse<Destination[]>>),
+    getDestinationById: (id: string) =>
+        apiRequest("GET", `${API_BASE_URL}/admin/destinations/${id}`).then(handleResponse<ApiResponse<Destination>>),
+    createDestination: (data: FormData) =>
+        apiMultipartRequest("POST", `${API_BASE_URL}/admin/destinations`, data).then(handleResponse<ApiResponse<Destination>>),
+    updateDestination: (id: string, data: FormData) =>
+        apiMultipartRequest("PUT", `${API_BASE_URL}/admin/destinations/${id}`, data).then(handleResponse<ApiResponse<Destination>>),
+    deleteDestination: (id: string) =>
+        apiRequest("DELETE", `${API_BASE_URL}/admin/destinations/${id}`).then(handleResponse),
 };

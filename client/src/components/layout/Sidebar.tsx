@@ -37,8 +37,9 @@ const navigationMenu = [
       { name: "Bookings", href: "/bookings", icon: ClipboardList },
     ],
   },
-  { name: "Users", href: "/users", icon: Users },
   { name: "News", href: "/news", icon: Newspaper },
+  { name: "Events", href: "/events", icon: CalendarDays },
+  { name: "Destinations", href: "/destinations", icon: Home },
 ];
 
 const masterDataItems = [
@@ -46,6 +47,7 @@ const masterDataItems = [
     { name: "Day Types", href: "/day-types", icon: CalendarDays },
     { name: "Gates", href: "/gates", icon: DoorOpen },
     { name: "Visitor Categories", href: "/visitor-categories", icon: UsersRound },
+      { name: "Users", href: "/users", icon: Users },
 ]
 
 export default function Sidebar({ isOpen, onClose, isMobile }: SidebarProps) {

@@ -28,8 +28,8 @@ import {
   DialogClose,
 } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
-import { newsApi } from "@/lib/api";
-import type { News } from "@/lib/api";
+import { eventApi } from "@/lib/api";
+import type { Event as EventType } from "@/lib/api";
 import { useEffect } from "react";
 import { RichTextEditor } from "@/components/ui/RichTextEditor";
 import { ScrollArea } from "../ui/scroll-area";
@@ -38,68 +38,73 @@ import { ScrollArea } from "../ui/scroll-area";
 const formSchema = z.object({
   title: z.string().min(3, "Title must be at least 3 characters."),
   content: z.string().min(10, "Content must be at least 10 characters."),
+  location: z.string().min(3, "Location is required."),
+  event_date: z.string().refine((val) => !isNaN(Date.parse(val)), { message: "Invalid date format" }),
   status: z.enum(["Draft", "Published"]),
   image: z.instanceof(FileList).optional(),
 });
 
 // --- Component Props ---
-interface NewsFormProps {
+interface EventFormProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  newsItem?: News;
+  eventItem?: EventType;
 }
 
-export function NewsForm({ open, onOpenChange, newsItem }: NewsFormProps) {
+export function EventForm({ open, onOpenChange, eventItem }: EventFormProps) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const isEditing = !!newsItem;
+  const isEditing = !!eventItem;
 
-  // --- PERBAIKAN DI SINI ---
-  // 1. Ambil URL dasar server dari environment variable Vite.
-  const serverBaseUrl = import.meta.env.VITE_API_BASE_URL.replace('/api', '');
+    const serverBaseUrl = import.meta.env.VITE_API_BASE_URL.replace('/api', '');
 
-  // 2. Buat URL gambar yang lengkap dan benar.
-  const imageUrl = newsItem?.image_url 
-    ? `${serverBaseUrl}/${newsItem.image_url.replace('/public', '')}` 
+  const imageUrl = eventItem?.image_url
+    ? `${serverBaseUrl}${eventItem.image_url.replace('/public', '')}`
     : '';
-  // --- AKHIR PERBAIKAN ---
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       title: "",
       content: "",
+      location: "",
+      event_date: "",
       status: "Draft",
     },
   });
 
   useEffect(() => {
-    if (newsItem) {
+    if (eventItem) {
       form.reset({
-        title: newsItem.title,
-        content: newsItem.content,
-        status: newsItem.status as "Draft" | "Published",
+        title: eventItem.title,
+        content: eventItem.content,
+        location: eventItem.location,
+        // Format tanggal agar sesuai dengan input type="datetime-local"
+        event_date: new Date(eventItem.event_date).toISOString().slice(0, 16),
+        status: eventItem.status as "Draft" | "Published",
       });
     } else {
       form.reset({
         title: "",
         content: "",
+        location: "",
+        event_date: "",
         status: "Draft",
       });
     }
-  }, [newsItem, form, open]);
+  }, [eventItem, form, open]);
 
   const mutation = useMutation({
     mutationFn: (formData: FormData) => {
       return isEditing
-        ? newsApi.updateNews(newsItem!.id_news, formData)
-        : newsApi.createNews(formData);
+        ? eventApi.updateEvent(eventItem!.id_event, formData)
+        : eventApi.createEvent(formData);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["news"] });
+      queryClient.invalidateQueries({ queryKey: ["events"] });
       toast({
         title: "Success",
-        description: `News article ${isEditing ? 'updated' : 'created'} successfully.`,
+        description: `Event ${isEditing ? 'updated' : 'created'} successfully.`,
       });
       onOpenChange(false);
     },
@@ -116,6 +121,8 @@ export function NewsForm({ open, onOpenChange, newsItem }: NewsFormProps) {
     const formData = new FormData();
     formData.append("title", values.title);
     formData.append("content", values.content);
+    formData.append("location", values.location);
+    formData.append("event_date", new Date(values.event_date).toISOString());
     formData.append("status", values.status);
     if (values.image && values.image.length > 0) {
       formData.append("image", values.image[0]);
@@ -131,14 +138,14 @@ export function NewsForm({ open, onOpenChange, newsItem }: NewsFormProps) {
         onEscapeKeyDown={(e) => e.preventDefault()}
       >
         <DialogHeader>
-          <DialogTitle>{isEditing ? "Edit" : "Add New"} News Article</DialogTitle>
+          <DialogTitle>{isEditing ? "Edit" : "Add New"} Event</DialogTitle>
         </DialogHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col flex-grow min-h-0">
             <ScrollArea className="flex-grow pr-6">
                 <div className="space-y-4 py-4">
                     <FormField name="title" control={form.control} render={({ field }) => (
-                      <FormItem><FormLabel>Title</FormLabel><FormControl><Input placeholder="Article Title" {...field} /></FormControl><FormMessage /></FormItem>
+                      <FormItem><FormLabel>Title</FormLabel><FormControl><Input placeholder="Event Title" {...field} /></FormControl><FormMessage /></FormItem>
                     )} />
                     
                     <FormField name="content" control={form.control} render={({ field }) => (
@@ -146,15 +153,24 @@ export function NewsForm({ open, onOpenChange, newsItem }: NewsFormProps) {
                         <FormLabel>Content</FormLabel>
                         <FormControl>
                             <RichTextEditor 
-                                className="h-96 mb-12"
+                                className="h-72 mb-12"
                                 value={field.value} 
                                 onChange={field.onChange} 
-                                placeholder="Write your article content here..." 
+                                placeholder="Describe the event..." 
                             />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
                     )} />
+                    
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <FormField name="location" control={form.control} render={({ field }) => (
+                            <FormItem><FormLabel>Location</FormLabel><FormControl><Input placeholder="Event Location" {...field} /></FormControl><FormMessage /></FormItem>
+                        )} />
+                        <FormField name="event_date" control={form.control} render={({ field }) => (
+                            <FormItem><FormLabel>Event Date</FormLabel><FormControl><Input type="datetime-local" {...field} /></FormControl><FormMessage /></FormItem>
+                        )} />
+                    </div>
 
                     <FormField name="status" control={form.control} render={({ field }) => (
                         <FormItem><FormLabel>Status</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Select a status" /></SelectTrigger></FormControl><SelectContent><SelectItem value="Draft">Draft</SelectItem><SelectItem value="Published">Published</SelectItem></SelectContent></Select><FormMessage /></FormItem>
@@ -162,12 +178,10 @@ export function NewsForm({ open, onOpenChange, newsItem }: NewsFormProps) {
                     <FormField name="image" control={form.control} render={({ field }) => (
                         <FormItem><FormLabel>Image</FormLabel><FormControl><Input type="file" accept="image/*" onChange={(e) => field.onChange(e.target.files)} /></FormControl><FormMessage /></FormItem>
                     )} />
-                    
-                    {/* --- GUNAKAN URL YANG SUDAH DIPERBAIKI DI SINI --- */}
-                    {isEditing && newsItem?.image_url && (
+                    {isEditing && eventItem?.image_url && (
                         <div className="text-sm">
                             <p className="font-medium">Current Image:</p>
-                            <img src={imageUrl} alt={newsItem.title} className="mt-2 rounded-md max-h-40" />
+                            <img src={imageUrl} alt={eventItem.title} className="mt-2 rounded-md max-h-40" />
                         </div>
                     )}
                 </div>
