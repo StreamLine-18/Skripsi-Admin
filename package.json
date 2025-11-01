@@ -4,12 +4,11 @@
   "type": "module",
   "license": "MIT",
   "scripts": {
-    "dev": "cross-env NODE_ENV=development tsx server/index.ts",
-    "dev:client": "vite --port 3001 ",
-    "dev:client:network": "vite --port 3001 --host 0.0.0.0",
+    "dev": "vite --port 3001 ",
+    "dev:network": "vite --port 3001 --host 0.0.0.0",
     "build": "vite build",
     "start": "cross-env NODE_ENV=production node dist/index.js",
-    "check": "tsc"
+    "check": "tsc --noEmit --project tsconfig.json" 
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",

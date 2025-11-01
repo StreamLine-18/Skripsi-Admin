@@ -204,10 +204,29 @@ export function DestinationForm({ open, onOpenChange, destinationItem }: Destina
 
                     {/* Menggunakan Textarea biasa untuk Features dan Facilities */}
                      <FormField name="features" control={form.control} render={({ field }) => (
-                        <FormItem><FormLabel>Features</FormLabel><FormControl><Textarea placeholder="List features, comma separated or one per line" {...field} rows={3} /></FormControl><FormMessage /></FormItem>
+                        <FormItem><FormLabel>Features</FormLabel>
+                        <FormControl>                            
+                        <RichTextEditor 
+                                className="h-60 mb-12" 
+                                value={field.value || ''} 
+                                onChange={field.onChange} 
+                                placeholder="Describe the Features..." 
+                            />
+                        </FormControl>
+                        <FormMessage />
+                        </FormItem>
                      )} />
                      <FormField name="facilities" control={form.control} render={({ field }) => (
-                        <FormItem><FormLabel>Facilities</FormLabel><FormControl><Textarea placeholder="List facilities, comma separated or one per line" {...field} rows={3} /></FormControl><FormMessage /></FormItem>
+                        <FormItem><FormLabel>Facilities</FormLabel>
+                        <FormControl>
+                        <RichTextEditor 
+                                className="h-60 mb-12" 
+                                value={field.value || ''} 
+                                onChange={field.onChange} 
+                                placeholder="Describe the Features..." 
+                            />
+                        </FormControl><FormMessage />
+                        </FormItem>
                      )} />
 
                     <FormField name="image" control={form.control} render={({ field }) => (
