@@ -12,7 +12,10 @@ import {
   UsersRound,
   ChevronRight,
   Store,
-  Newspaper
+  Newspaper,
+  BarChart3,
+  Megaphone,
+  AlertTriangle
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useQuery } from "@tanstack/react-query";
@@ -42,12 +45,18 @@ const navigationMenu = [
   { name: "Destinations", href: "/destinations", icon: Home },
 ];
 
+const servicesItems = [
+  { name: "SKM", href: "/skm", icon: BarChart3 },
+  { name: "Pengaduan Masyarakat", href: "/pengaduan", icon: Megaphone },
+  { name: "WBS", href: "/wbs", icon: AlertTriangle },
+];
+
 const masterDataItems = [
-    { name: "Ticket Prices", href: "/ticket-prices", icon: Ticket },
-    { name: "Day Types", href: "/day-types", icon: CalendarDays },
-    { name: "Gates", href: "/gates", icon: DoorOpen },
-    { name: "Visitor Categories", href: "/visitor-categories", icon: UsersRound },
-      { name: "Users", href: "/users", icon: Users },
+  { name: "Ticket Prices", href: "/ticket-prices", icon: Ticket },
+  { name: "Day Types", href: "/day-types", icon: CalendarDays },
+  { name: "Gates", href: "/gates", icon: DoorOpen },
+  { name: "Visitor Categories", href: "/visitor-categories", icon: UsersRound },
+  { name: "Users", href: "/users", icon: Users },
 ]
 
 export default function Sidebar({ isOpen, onClose, isMobile }: SidebarProps) {
@@ -68,83 +77,162 @@ export default function Sidebar({ isOpen, onClose, isMobile }: SidebarProps) {
   const user = getMeResponse?.data;
 
   const SidebarContent = () => (
-    <div className="flex flex-col flex-grow pt-5 pb-4 overflow-y-auto bg-sidebar">
-      <div className="flex items-center flex-shrink-0 px-8">
-        <div className="flex items-center space-x-3">
-          <img src={logo} alt="AdminPanel Logo" />
+    <div className="flex flex-col h-full bg-sidebar">
+      {/* Logo Section */}
+      <div className="flex flex-col items-center justify-center px-6 pt-8 pb-6 border-b border-sidebar-border/50">
+        <div className="relative">
+          <div className="absolute inset-0 bg-sidebar-accent/20 blur-xl rounded-full"></div>
+          <img src={logo} alt="Alas Purwo" className="relative h-20 w-20 object-contain drop-shadow-lg" />
+        </div>
+        <div className="mt-4 text-center">
+          <h2 className="text-base font-semibold text-sidebar-foreground"> Taman Nasional Alas Purwo</h2>
+          <p className="text-xs text-sidebar-foreground mt-0.5">Admin Panel</p>
         </div>
       </div>
       
-      <div className="mt-6 flex-1 flex flex-col justify-between">
-        <div>
-          {/* FIX: Removed flex-1 from both <nav> elements to remove the large space */}
-          <nav className="px-2 space-y-1">
-            <h3 className="px-3 text-xs font-semibold text-sidebar-foreground tracking-wider">Main</h3>
+      {/* Navigation */}
+      <div className="flex-1 overflow-y-auto py-6">
+        <nav className="px-3 space-y-6">
+          {/* Main Section */}
+          <div className="space-y-1">
+            <h3 className="px-3 text-[10px] font-semibold text-sidebar-foreground uppercase tracking-wider mb-2">
+              Main
+            </h3>
             {navigationMenu.map((item) => {
               const Icon = item.icon;
               const isParentActive = item.subItems?.some(sub => location === sub.href);
 
               if (item.subItems) {
                 return (
-                  <Collapsible key={item.name} open={openMenu === item.name} onOpenChange={() => setOpenMenu(openMenu === item.name ? null : item.name)}>
-                    <CollapsibleTrigger className={cn("sidebar-nav-item group w-full", isParentActive && "active")}>
-                       <div className="flex items-center">
-                          <Icon className="w-4 h-4 mr-3" />
-                          <span>{item.name}</span>
-                       </div>
-                       <ChevronRight className={cn("w-4 h-4 transition-transform", openMenu === item.name && "rotate-90")} />
+                  <Collapsible 
+                    key={item.name} 
+                    open={openMenu === item.name} 
+                    onOpenChange={() => setOpenMenu(openMenu === item.name ? null : item.name)}
+                  >
+                    <CollapsibleTrigger 
+                      className={cn(
+                        "sidebar-nav-item group w-full",
+                        isParentActive && "active"
+                      )}
+                    >
+                      <div className="flex items-center">
+                        <Icon className="w-4 h-4 mr-3" />
+                        <span className="text-sm">{item.name}</span>
+                      </div>
+                      <ChevronRight 
+                        className={cn(
+                          "w-4 h-4 transition-transform duration-200",
+                          openMenu === item.name && "rotate-90"
+                        )} 
+                      />
                     </CollapsibleTrigger>
-                    <CollapsibleContent className="pl-6 space-y-1 mt-1">
+                    <CollapsibleContent className="pl-7 space-y-1 mt-1">
                       {item.subItems.map(subItem => {
-                          const SubIcon = subItem.icon;
-                          const isSubActive = location === subItem.href;
-                          return (
-                               <Link key={subItem.name} href={subItem.href} className={cn("sidebar-nav-item group is-subitem", isSubActive && "active")} onClick={isMobile ? onClose : undefined}>
-                                  <SubIcon className="w-4 h-4 mr-3" />
-                                  <span>{subItem.name}</span>
-                              </Link>
-                          )
+                        const SubIcon = subItem.icon;
+                        const isSubActive = location === subItem.href;
+                        return (
+                          <Link 
+                            key={subItem.name} 
+                            href={subItem.href} 
+                            className={cn(
+                              "sidebar-nav-item group is-subitem",
+                              isSubActive && "active"
+                            )} 
+                            onClick={isMobile ? onClose : undefined}
+                          >
+                            <SubIcon className="w-3.5 h-3.5 mr-3" />
+                            <span className="text-sm">{subItem.name}</span>
+                          </Link>
+                        );
                       })}
                     </CollapsibleContent>
                   </Collapsible>
-                )
+                );
               }
 
               const isActive = location === item.href;
               return (
-                <Link key={item.name} href={item.href} className={cn("sidebar-nav-item group", isActive && "active")} onClick={isMobile ? onClose : undefined}>
+                <Link 
+                  key={item.name} 
+                  href={item.href} 
+                  className={cn(
+                    "sidebar-nav-item group",
+                    isActive && "active"
+                  )} 
+                  onClick={isMobile ? onClose : undefined}
+                >
                   <Icon className="w-4 h-4 mr-3" />
-                  <span>{item.name}</span>
+                  <span className="text-sm">{item.name}</span>
                 </Link>
               );
             })}
-          </nav>
-          <nav className="mt-4 px-2 space-y-1">
-            <h3 className="px-3 text-xs font-semibold text-sidebar-foreground tracking-wider ">Master Data</h3>
+          </div>
+
+          {/* Services Section */}
+          <div className="space-y-1">
+            <h3 className="px-3 text-[10px] font-semibold text-sidebar-foreground uppercase tracking-wider mb-2">
+              Services
+            </h3>
+            {servicesItems.map((item) => {
+              const Icon = item.icon;
+              const isActive = location === item.href;
+              return (
+                <Link 
+                  key={item.name} 
+                  href={item.href} 
+                  className={cn(
+                    "sidebar-nav-item group",
+                    isActive && "active"
+                  )} 
+                  onClick={isMobile ? onClose : undefined}
+                >
+                  <Icon className="w-4 h-4 mr-3" />
+                  <span className="text-sm">{item.name}</span>
+                </Link>
+              );
+            })}
+          </div>
+
+          {/* Master Data Section */}
+          <div className="space-y-1">
+            <h3 className="px-3 text-[10px] font-semibold text-sidebar-foreground uppercase tracking-wider mb-2">
+              Master Data
+            </h3>
             {masterDataItems.map((item) => {
               const Icon = item.icon;
               const isActive = location === item.href;
               return (
-                <Link key={item.name} href={item.href} className={cn("sidebar-nav-item group", isActive && "active")} onClick={isMobile ? onClose : undefined}>
+                <Link 
+                  key={item.name} 
+                  href={item.href} 
+                  className={cn(
+                    "sidebar-nav-item group",
+                    isActive && "active"
+                  )} 
+                  onClick={isMobile ? onClose : undefined}
+                >
                   <Icon className="w-4 h-4 mr-3" />
-                  <span>{item.name}</span>
+                  <span className="text-sm">{item.name}</span>
                 </Link>
               );
             })}
-          </nav>
-        </div>
+          </div>
+        </nav>
+      </div>
         
-        <div className="flex-shrink-0 flex flex-col border-t border-sidebar-border p-4 space-y-4">
-          <div className="flex-shrink-0 w-full group block">
-            <div className="flex items-center">
-              <div className="h-9 w-9 rounded-full bg-sidebar-accent flex items-center justify-center">
-                <UserIcon className="w-4 h-4 text-sidebar-accent-foreground" />
-              </div>
-              <div className="ml-3">
-                <p className="text-sm font-medium text-sidebar-foreground">{user?.full_name || 'Admin User'}</p>
-                <p className="text-xs font-medium text-sidebar-foreground">{user?.email || 'Loading...'}</p>
-              </div>
-            </div>
+      {/* User Profile Section */}
+      <div className="flex-shrink-0 border-t border-sidebar-border/50 p-4">
+        <div className="flex items-center gap-3 px-2 py-2 rounded-lg hover:bg-sidebar-accent/50 transition-colors">
+          <div className="h-9 w-9 rounded-full bg-sidebar-accent flex items-center justify-center flex-shrink-0">
+            <UserIcon className="w-4 h-4 text-sidebar-accent-foreground" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-medium text-sidebar-foreground truncate">
+              {user?.full_name || 'Admin User'}
+            </p>
+            <p className="text-xs text-sidebar-foreground truncate">
+              {user?.email || 'Loading...'}
+            </p>
           </div>
         </div>
       </div>
@@ -154,14 +242,33 @@ export default function Sidebar({ isOpen, onClose, isMobile }: SidebarProps) {
   if (isMobile) {
     return (
       <>
-        <div className={cn("fixed inset-0 bg-gray-900/80 z-40 md:hidden", isOpen ? "opacity-100" : "opacity-0 pointer-events-none")} onClick={onClose} aria-hidden="true" />
-        <div className={cn("fixed inset-y-0 left-0 z-50 flex w-64 flex-col bg-sidebar transform md:hidden", isOpen ? "translate-x-0" : "-translate-x-full")}>
-          <div className="absolute top-2 right-0 -mr-14">
-             <button type="button" className="flex h-10 w-10 items-center justify-center rounded-full text-white" onClick={onClose}>
-                <span className="sr-only">Close sidebar</span>
-                <X className="h-6 w-6" />
-              </button>
-          </div>
+        {/* Backdrop */}
+        <div 
+          className={cn(
+            "fixed inset-0 bg-black/60 backdrop-blur-sm z-40 md:hidden transition-opacity duration-300",
+            isOpen ? "opacity-100" : "opacity-0 pointer-events-none"
+          )} 
+          onClick={onClose} 
+          aria-hidden="true" 
+        />
+        
+        {/* Mobile Sidebar */}
+        <div 
+          className={cn(
+            "fixed inset-y-0 left-0 z-50 w-64 bg-sidebar transform md:hidden transition-transform duration-300 ease-in-out shadow-2xl",
+            isOpen ? "translate-x-0" : "-translate-x-full"
+          )}
+        >
+          {/* Close Button */}
+          <button 
+            type="button" 
+            className="absolute top-4 -right-12 flex h-10 w-10 items-center justify-center rounded-full bg-white/10 backdrop-blur-sm text-white hover:bg-white/20 transition-colors" 
+            onClick={onClose}
+          >
+            <span className="sr-only">Close sidebar</span>
+            <X className="h-5 w-5" />
+          </button>
+          
           <SidebarContent />
         </div>
       </>
@@ -169,7 +276,7 @@ export default function Sidebar({ isOpen, onClose, isMobile }: SidebarProps) {
   }
 
   return (
-    <div className="hidden md:flex md:w-64 md:flex-col">
+    <div className="hidden md:flex md:w-64 md:flex-col md:fixed md:inset-y-0">
       <SidebarContent />
     </div>
   );

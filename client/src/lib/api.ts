@@ -282,15 +282,15 @@ export const visitorCategoryApi = {
 
 export const ticketPriceApi = {
     getTicketPrices: (params: QueryParams = {}) =>
-        apiRequest("GET", createUrlWithParams(`${API_BASE_URL}/admin/ticket-prices/all`, params)).then(handleResponse<ApiResponse<TicketPrice[]>>),
+        apiRequest("GET", createUrlWithParams(`${API_BASE_URL}/admin/ticket/`, params)).then(handleResponse<ApiResponse<TicketPrice[]>>),
     getTicketPriceById: (id: string) =>
-        apiRequest("GET", `${API_BASE_URL}/admin/ticket-prices/${id}`).then(handleResponse<ApiResponse<TicketPrice>>),
+        apiRequest("GET", `${API_BASE_URL}/admin/ticket/${id}`).then(handleResponse<ApiResponse<TicketPrice>>),
     createTicketPrice: (data: InsertTicketPrice) =>
-        apiRequest("POST", `${API_BASE_URL}/admin/ticket-prices`, data).then(handleResponse<ApiResponse<TicketPrice>>),
+        apiRequest("POST", `${API_BASE_URL}/admin/ticket`, data).then(handleResponse<ApiResponse<TicketPrice>>),
     updateTicketPrice: (id: string, data: Partial<InsertTicketPrice>) =>
-        apiRequest("PUT", `${API_BASE_URL}/admin/ticket-prices/${id}`, data).then(handleResponse<ApiResponse<TicketPrice>>),
+        apiRequest("PUT", `${API_BASE_URL}/admin/ticket/${id}`, data).then(handleResponse<ApiResponse<TicketPrice>>),
     deleteTicketPrice: (id: string) =>
-        apiRequest("DELETE", `${API_BASE_URL}/admin/ticket-prices/${id}`).then(handleResponse),
+        apiRequest("DELETE", `${API_BASE_URL}/admin/ticket/${id}`).then(handleResponse),
 };
 
 export const bookingApi = {
@@ -348,4 +348,187 @@ export const destinationApi = {
         apiMultipartRequest("PUT", `${API_BASE_URL}/admin/destinations/${id}`, data).then(handleResponse<ApiResponse<Destination>>),
     deleteDestination: (id: string) =>
         apiRequest("DELETE", `${API_BASE_URL}/admin/destinations/${id}`).then(handleResponse),
+};
+export
+ interface SKMSurvey {
+    id_survey: string;
+    survey_date: string;
+    survey_time: string;
+    access_location: string;
+    is_disabled: boolean;
+    disability_type: string | null;
+    gender: string;
+    age: number;
+    education: string;
+    occupation: string;
+    service_type: string;
+    service_received_date: string;
+    service_received_time: string;
+    q1_requirement_match: number;
+    q2_procedure_ease: number;
+    q3_time_match: number;
+    q4_cost_match: number;
+    q5_product_match: number;
+    q6a_app_speed: number;
+    q6b_staff_competence: number;
+    q7a_app_ease: number;
+    q7b_staff_behavior: number;
+    q8_complaint_channel: number;
+    q9a_app_content: number;
+    q9b_facilities: number;
+    q10_feedback: string;
+    created_on: string;
+}
+
+export interface SKMStatistics {
+    total_responses: number;
+    ikm_score: number;
+    ikm_category: string;
+    best_dimension: {
+        key: string;
+        label: string;
+        score: number;
+    };
+    lowest_dimension: {
+        key: string;
+        label: string;
+        score: number;
+    };
+    average_scores: {
+        q1_requirement_match: number;
+        q2_procedure_ease: number;
+        q3_time_match: number;
+        q4_cost_match: number;
+        q5_product_match: number;
+        q6a_app_speed: number;
+        q6b_staff_competence: number;
+        q7a_app_ease: number;
+        q7b_staff_behavior: number;
+        q8_complaint_channel: number;
+        q9a_app_content: number;
+        q9b_facilities: number;
+    };
+    demographics: {
+        by_gender: Record<string, number>;
+        by_education: Record<string, number>;
+        by_service_type: Record<string, number>;
+        disabled_count: number;
+    };
+}
+
+export const skmApi = {
+    getSurveys: (params: QueryParams = {}) =>
+        apiRequest("GET", createUrlWithParams(`${API_BASE_URL}/admin/skm`, params)).then(handleResponse<ApiResponse<SKMSurvey[]>>),
+    searchSurveys: (params: QueryParams = {}) =>
+        apiRequest("GET", createUrlWithParams(`${API_BASE_URL}/admin/skm/search`, params)).then(handleResponse<ApiResponse<SKMSurvey[]>>),
+    getStatistics: () =>
+        apiRequest("GET", `${API_BASE_URL}/admin/skm/statistics`).then(handleResponse<ApiResponse<SKMStatistics>>),
+    getSurveyById: (id: string) =>
+        apiRequest("GET", `${API_BASE_URL}/admin/skm/${id}`).then(handleResponse<ApiResponse<SKMSurvey>>),
+    deleteSurvey: (id: string) =>
+        apiRequest("DELETE", `${API_BASE_URL}/admin/skm/${id}`).then(handleResponse),
+    exportSurveys: (params: QueryParams = {}) => {
+        const url = createUrlWithParams(`${API_BASE_URL}/admin/skm/export`, params);
+        return apiRequest("GET", url).then(res => res.blob());
+    },
+};
+
+export interface Pelaporan {
+    id_pelaporan: string;
+    id_user: string;
+    full_name: string;
+    email: string;
+    phone: string;
+    gender: string;
+    status: string;
+    complaint_type: string;
+    description: string;
+    priority: string;
+    complaint_status: string;
+    response: string | null;
+    created_on: string;
+    updated_on?: string;
+    user?: {
+        full_name: string;
+        email: string;
+    };
+}
+
+export interface PelaporanAnalytics {
+    total_reports: number;
+    by_status: Record<string, number>;
+    by_priority: Record<string, number>;
+    by_complaint_type: Record<string, number>;
+    by_gender: Record<string, number>;
+    by_user_status: Record<string, number>;
+    recent_reports: Array<{
+        id_pelaporan: string;
+        full_name: string;
+        complaint_type: string;
+        complaint_status: string;
+        priority: string;
+        created_on: string;
+    }>;
+}
+
+export const pelaporanApi = {
+    getReports: (params: QueryParams = {}) =>
+        apiRequest("GET", createUrlWithParams(`${API_BASE_URL}/admin/pelaporan`, params)).then(handleResponse<ApiResponse<Pelaporan[]>>),
+    getAnalytics: () =>
+        apiRequest("GET", `${API_BASE_URL}/admin/pelaporan/analytics`).then(handleResponse<ApiResponse<PelaporanAnalytics>>),
+    getReportById: (id: string) =>
+        apiRequest("GET", `${API_BASE_URL}/admin/pelaporan/${id}`).then(handleResponse<ApiResponse<Pelaporan>>),
+    updateStatus: (id: string, data: { status: string; response: string }) =>
+        apiRequest("PATCH", `${API_BASE_URL}/admin/pelaporan/${id}/status`, data).then(handleResponse<ApiResponse<Pelaporan>>),
+    deleteReport: (id: string) =>
+        apiRequest("DELETE", `${API_BASE_URL}/admin/pelaporan/${id}`).then(handleResponse),
+};
+
+export interface Whistleblowing {
+    id_wbs: string;
+    email: string;
+    phone: string;
+    gender: string;
+    what: string;
+    where: string;
+    when: string;
+    who: string;
+    how: string;
+    evidence: string;
+    description: string;
+    priority: string;
+    files: string[];
+    status: string;
+    internal_notes: string | null;
+    handled_by: string | null;
+    handled_at: string | null;
+    created_on: string;
+    updated_on?: string;
+}
+
+export interface WhistleblowingAnalytics {
+    total_reports: number;
+    by_status: Record<string, number>;
+    by_priority: Record<string, number>;
+    by_gender: Record<string, number>;
+    recent_reports: Array<{
+        id_wbs: string;
+        gender: string;
+        priority: string;
+        status: string;
+        created_on: string;
+    }>;
+}
+
+export const whistleblowingApi = {
+    getReports: (params: QueryParams = {}) =>
+        apiRequest("GET", createUrlWithParams(`${API_BASE_URL}/admin/whistleblowing`, params)).then(handleResponse<ApiResponse<Whistleblowing[]>>),
+    getAnalytics: () =>
+        apiRequest("GET", `${API_BASE_URL}/admin/whistleblowing/analytics`).then(handleResponse<ApiResponse<WhistleblowingAnalytics>>),
+    getReportById: (id: string) =>
+        apiRequest("GET", `${API_BASE_URL}/admin/whistleblowing/${id}`).then(handleResponse<ApiResponse<Whistleblowing>>),
+    updateStatus: (id: string, data: { status: string; internal_notes: string }) =>
+        apiRequest("PATCH", `${API_BASE_URL}/admin/whistleblowing/${id}/status`, data).then(handleResponse<ApiResponse<Whistleblowing>>),
+    deleteReport: (id: string) =>
+        apiRequest("DELETE", `${API_BASE_URL}/admin/whistleblowing/${id}`).then(handleResponse),
 };

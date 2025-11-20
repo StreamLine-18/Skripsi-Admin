@@ -7,7 +7,7 @@
     "dev": "vite --port 3001 ",
     "dev:network": "vite --port 3001 --host 0.0.0.0",
     "build": "vite build",
-    "start": "cross-env NODE_ENV=production node dist/index.js",
+    "start": "vite --port 3001",
     "check": "tsc --noEmit --project tsconfig.json" 
   },
   "dependencies": {

@@ -6,7 +6,7 @@ import { useLocation } from "wouter";
 import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { useToast } from "@/hooks/use-toast";
 import { Eye, EyeOff, Lock, Mail } from "lucide-react";
@@ -84,36 +84,45 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-md w-full space-y-8">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-100 via-slate-50 to-gray-100 px-4">
+      <div className="w-full max-w-md">
+        {/* Logo Section */}
+        <div className="text-center mb-8">
+          <div className="inline-block">
+            <img 
+              src={logo} 
+              alt="Alas Purwo" 
+              className="w-32 h-32 mx-auto mb-4 drop-shadow-sm" 
+            />
+          </div>
+          <h1 className="text-2xl font-semibold text-gray-900 mb-1">
+            Admin Panel
+          </h1>
+          <p className="text-sm text-gray-500">
+            Sign in to continue
+          </p>
+        </div>
 
-
-        <Card>
-          <CardHeader className="text-center">
-            <div>
-              <img src={logo} alt="Logo" className="w-52 h-52 mx-auto" />
-            </div>
-            <CardTitle>Admin Panel Login</CardTitle>
-            <CardDescription>
-              Enter your credentials to access the dashboard
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
+        {/* Login Form */}
+        <Card className="border-0 shadow-lg">
+          <CardContent className="pt-6 pb-8 px-8">
             <Form {...form}>
-              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5">
                 <FormField
                   control={form.control}
                   name="email"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Email address</FormLabel>
+                      <FormLabel className="text-sm font-medium text-gray-700">
+                        Email
+                      </FormLabel>
                       <FormControl>
                         <div className="relative">
-                          <Mail className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                          <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
                           <Input
                             type="email"
-                            placeholder="Enter your email"
-                            className="pl-10"
+                            placeholder="admin@example.com"
+                            className="pl-10 h-11 border-gray-200 focus:border-gray-400 focus:ring-gray-400"
                             {...field}
                           />
                         </div>
@@ -128,19 +137,21 @@ export default function Login() {
                   name="password"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Password</FormLabel>
+                      <FormLabel className="text-sm font-medium text-gray-700">
+                        Password
+                      </FormLabel>
                       <FormControl>
                         <div className="relative">
-                          <Lock className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                          <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
                           <Input
                             type={showPassword ? "text" : "password"}
-                            placeholder="Enter your password"
-                            className="pl-10 pr-10"
+                            placeholder="••••••••"
+                            className="pl-10 pr-10 h-11 border-gray-200 focus:border-gray-400 focus:ring-gray-400"
                             {...field}
                           />
                           <button
                             type="button"
-                            className="absolute right-3 top-3 text-gray-400 hover:text-gray-600"
+                            className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
                             onClick={() => setShowPassword(!showPassword)}
                           >
                             {showPassword ? (
@@ -156,23 +167,22 @@ export default function Login() {
                   )}
                 />
 
-                <div className="pt-2">
-                  <Button
-                    type="submit"
-                    className="w-full"
-                    disabled={loginMutation.isPending}
-                  >
-                    {loginMutation.isPending ? "Signing in..." : "Sign in"}
-                  </Button>
-                </div>
+                <Button
+                  type="submit"
+                  className="w-full h-11 mt-6 bg-gray-900 hover:bg-gray-800 text-white"
+                  disabled={loginMutation.isPending}
+                >
+                  {loginMutation.isPending ? "Signing in..." : "Sign in"}
+                </Button>
               </form>
             </Form>
           </CardContent>
         </Card>
 
-        <div className="text-center">
-          <p className="text-xs text-gray-500">
-            Copyright &copy; {new Date().getFullYear()} Alas Purwo. All rights reserved.
+        {/* Footer */}
+        <div className="text-center mt-8">
+          <p className="text-xs text-gray-400">
+            &copy; {new Date().getFullYear()} Alas Purwo. All rights reserved.
           </p>
         </div>
       </div>

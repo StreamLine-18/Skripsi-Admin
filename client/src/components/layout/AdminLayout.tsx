@@ -19,7 +19,8 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
         isMobile={isMobile}
       />
       
-      <div className="flex flex-col w-0 flex-1 overflow-hidden">
+      {/* Main content area with left margin on desktop to account for fixed sidebar */}
+      <div className="flex flex-col flex-1 md:ml-64 overflow-hidden">
         <TopBar onMenuClick={() => setSidebarOpen(true)} />
         
         <main className="flex-1 relative overflow-y-auto focus:outline-none">

@@ -89,3 +89,22 @@
     @apply text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground;
   }
 }
+
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 4px;
+}
+
+::-webkit-scrollbar-track {
+  background: hsl(60, 4.8%, 95.9%);
+}
+
+::-webkit-scrollbar-thumb {
+  background: hsl(0, 0%, 16%);
+  border-radius: px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: hsl(0, 0%, 16%);
+}

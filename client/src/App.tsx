@@ -20,6 +20,9 @@ import OnsiteBooking from "./pages/OnsiteBooking";
 import NewsPage from "./pages/News";
 import EventsPage from "./pages/Event";
 import DestinationsPage from "./pages/Destinations";
+import SKMPage from "./pages/SKM";
+import PengaduanPage from "./pages/Pengaduan";
+import WBSPage from "./pages/WBS";
 import { authApi } from "./lib/api";
 import { useToast } from "./hooks/use-toast";
 
@@ -63,6 +66,9 @@ function ProtectedRoutes() {
         <Route path="/news" component={NewsPage} />
         <Route path="/events" component={EventsPage} />
         <Route path="/destinations" component={DestinationsPage} />
+        <Route path="/skm" component={SKMPage} />
+        <Route path="/pengaduan" component={PengaduanPage} />
+        <Route path="/wbs" component={WBSPage} />
         <Route path="/login"><Redirect to="/" /></Route>
         <Route component={NotFound} />
       </Switch>

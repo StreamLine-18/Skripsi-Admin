@@ -1,4 +1,4 @@
-import { Search, Bell, Menu, User, ChevronDown, LogOutIcon } from "lucide-react";
+import { Search, Menu, LogOutIcon } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 
@@ -7,34 +7,30 @@ interface TopBarProps {
 }
 
 export default function TopBar({ onMenuClick }: TopBarProps) {
-
-    // Define the logout function
   const logout = () => {
     localStorage.removeItem('access_token');
     window.location.href = '/login';
   };
 
   return (
-    <div className="relative z-10 flex-shrink-0 flex h-16 bg-white shadow">
-      {/* Mobile menu button - only visible on mobile */}
+    <div className="relative z-10 flex-shrink-0 flex h-16 bg-white border-b border-slate-200/60">
+      {/* Mobile menu button */}
       <button
         type="button"
-        className="md:hidden h-16 w-16 border-r border-slate-200 text-slate-500 hover:bg-slate-50 hover:text-slate-700 focus:outline-none focus:bg-slate-100 flex items-center justify-center transition-colors"
+        className="md:hidden h-16 w-16 border-r border-slate-200/60 text-slate-600 hover:bg-slate-50 hover:text-slate-900 focus:outline-none transition-colors"
         onClick={onMenuClick}
         aria-label="Open menu"
       >
-        <Menu className="h-6 w-6" />
+        <Menu className="h-5 w-5 mx-auto" />
       </button>
       
-      <div className="flex-1 px-4 flex justify-between items-center">
+      <div className="flex-1 px-6 flex justify-between items-center">
         {/* Search bar */}
-        <div className="flex-1 max-w-lg">
-          <div className="relative w-full text-slate-400 focus-within:text-slate-600">
-            <div className="absolute inset-y-0 left-0 flex items-center pointer-events-none">
-              <Search className="h-4 w-4 ml-3" />
-            </div>
+        <div className="flex-1 max-w-md">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
             <Input
-              className="block w-full pl-10 pr-3 py-2 border-transparent text-slate-900 placeholder-slate-500 focus:outline-none focus:placeholder-slate-400 focus:ring-0 focus:border-transparent"
+              className="w-full pl-10 pr-4 h-9 bg-slate-50 border-slate-200/60 text-slate-900 placeholder-slate-400 focus:bg-white focus:border-slate-300 transition-colors"
               placeholder="Search..."
               type="search"
             />
@@ -42,14 +38,15 @@ export default function TopBar({ onMenuClick }: TopBarProps) {
         </div>
         
         {/* Right side actions */}
-        <div className="flex items-center space-x-2">
+        <div className="flex items-center gap-2 ml-4">
           <Button 
             variant="ghost" 
             size="icon" 
-            className="text-slate-400 hover:text-slate-600 hover:bg-slate-50" 
+            className="h-9 w-9 text-slate-500 hover:text-slate-900 hover:bg-slate-100 transition-colors" 
             onClick={logout}
+            title="Logout"
           >
-            <LogOutIcon className="h-5 w-5" />
+            <LogOutIcon className="h-4 w-4" />
           </Button>
         </div>
       </div>
