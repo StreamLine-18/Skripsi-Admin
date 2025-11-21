@@ -1,10 +1,18 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { keepPreviousData } from '@tanstack/react-query'
-import { Edit, Trash2, Plus, Ticket as TicketIcon, ChevronLeft, ChevronRight, Power, PowerOff } from "lucide-react";
+import { Edit, Trash2, Plus, Ticket as TicketIcon, Power, PowerOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { DataTable } from "@/components/ui/data-table";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -27,11 +35,11 @@ export default function TicketPrices() {
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [selectedTicketPrice, setSelectedTicketPrice] = useState<TicketPrice | undefined>();
-  const [currentPage, setCurrentPage] = useState(1);
+  const [page, setPage] = useState(1);
 
   const { data: apiResponse, isLoading } = useQuery({
-    queryKey: ["ticketPrices", currentPage],
-    queryFn: () => ticketPriceApi.getTicketPrices({ page: currentPage, pageSize: 10 }),
+    queryKey: ["ticketPrices", page],
+    queryFn: () => ticketPriceApi.getTicketPrices({ page, pageSize: 10 }),
     placeholderData: keepPreviousData,
   });
 
@@ -42,11 +50,18 @@ export default function TicketPrices() {
     mutationFn: (id: string) => ticketPriceApi.deleteTicketPrice(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["ticketPrices"] });
-      toast({ title: "Success", description: "Ticket price deleted successfully." });
+      toast({ 
+        title: "Berhasil", 
+        description: "Harga tiket berhasil dihapus" 
+      });
       setIsDeleteDialogOpen(false);
     },
     onError: (error: any) => {
-      toast({ title: "Error", description: error.message, variant: "destructive" });
+      toast({ 
+        title: "Gagal", 
+        description: error.message, 
+        variant: "destructive" 
+      });
     },
   });
 
@@ -55,10 +70,17 @@ export default function TicketPrices() {
         ticketPriceApi.updateTicketPrice(ticketPrice.id_ticket_price, { is_active: !ticketPrice.is_active }),
     onSuccess: (_, ticketPrice) => {
         queryClient.invalidateQueries({ queryKey: ["ticketPrices"] });
-        toast({ title: "Success", description: `Ticket price has been ${ticketPrice.is_active ? 'deactivated' : 'activated'}.` });
+        toast({ 
+          title: "Berhasil", 
+          description: `Harga tiket berhasil ${ticketPrice.is_active ? 'dinonaktifkan' : 'diaktifkan'}` 
+        });
     },
     onError: (error: any) => {
-        toast({ title: "Error", description: error.message, variant: "destructive" });
+        toast({ 
+          title: "Gagal", 
+          description: error.message, 
+          variant: "destructive" 
+        });
     }
   });
 
@@ -83,105 +105,180 @@ export default function TicketPrices() {
     }
   };
 
-  const columns = [
-    {
-      key: "details",
-      label: "Ticket Details",
-      render: (tp: TicketPrice) => (
-        <div>
-          {/* FIX: Use optional chaining to prevent crash if nested data is missing */}
-          <p className="font-medium">{tp.gate?.name || 'N/A'}</p>
-          <p className="text-sm text-muted-foreground">
-            {tp.category?.name || 'N/A'} - {tp.dayType?.name || 'N/A'}
-          </p>
-        </div>
-      ),
-    },
-    {
-      key: "price",
-      label: "Price",
-      render: (tp: TicketPrice) => (
-        <div className="text-sm font-semibold">
-          {new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR' }).format(Number(tp.price))}
-        </div>
-      ),
-    },
-    {
-      key: "status",
-      label: "Status",
-      render: (tp: TicketPrice) => (
-        <Badge variant={tp.is_active ? "default" : "secondary"} className={tp.is_active ? "bg-emerald-100 text-emerald-800" : "bg-slate-100 text-slate-800"}>
-          {tp.is_active ? "Active" : "Inactive"}
-        </Badge>
-      ),
-    },
-  ];
-
-  const actions = (ticketPrice: TicketPrice) => (
-    <div className="flex space-x-1">
-       <Button variant="ghost" size="sm" onClick={() => toggleStatusMutation.mutate(ticketPrice)} title={ticketPrice.is_active ? "Deactivate" : "Activate"}>
-        {ticketPrice.is_active ? <PowerOff className="h-4 w-4 text-yellow-600" /> : <Power className="h-4 w-4 text-emerald-600" />}
-      </Button>
-      <Button variant="ghost" size="sm" onClick={() => handleEdit(ticketPrice)}>
-        <Edit className="h-4 w-4" />
-      </Button>
-      <Button variant="ghost" size="sm" className="text-red-600 hover:text-red-900" onClick={() => handleDelete(ticketPrice)}>
-        <Trash2 className="h-4 w-4" />
-      </Button>
-    </div>
-  );
+  const formatPrice = (price: number) => {
+    return new Intl.NumberFormat('id-ID', { 
+      style: 'currency', 
+      currency: 'IDR',
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0
+    }).format(Number(price));
+  };
 
   return (
-    <div className="p-4 md:p-6">
-      <div className="md:flex md:items-center md:justify-between mb-4">
-        <div className="flex-1 min-w-0">
-          <h2 className="text-2xl font-bold leading-7 text-slate-900 sm:text-3xl sm:truncate">
-            Ticket Price Management
-          </h2>
-          <p className="mt-1 text-sm text-slate-500">
-            Define ticket prices based on gate, visitor category, and day type.
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-semibold text-gray-900">
+            Harga Tiket
+          </h1>
+          <p className="text-sm text-gray-500 mt-1">
+            Kelola harga tiket berdasarkan gerbang, kategori pengunjung, dan jenis hari
           </p>
         </div>
-        <div className="mt-4 flex items-center space-x-2 md:mt-0 md:ml-4">
-          <Button onClick={handleCreate}>
-            <Plus className="h-4 w-4 mr-2" />
-            Add Price
-          </Button>
-        </div>
+        <Button onClick={handleCreate}>
+          <Plus className="h-4 w-4 mr-2" />
+          Tambah Harga
+        </Button>
       </div>
 
-      <DataTable
-        title="All Ticket Prices"
-        description="List of all defined ticket prices."
-        data={ticketPrices.map(tp => ({ ...tp, id: tp.id_ticket_price }))}
-        columns={columns}
-        loading={isLoading}
-        actions={actions}
-      />
+      {/* Stats Card */}
+      <Card>
+        <CardContent className="pt-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-gray-500">Total Harga Tiket</p>
+              <p className="text-2xl font-semibold text-gray-900 mt-1">
+                {pagination?.total_records || 0}
+              </p>
+            </div>
+            <div className="h-12 w-12 bg-green-100 rounded-lg flex items-center justify-center">
+              <TicketIcon className="h-6 w-6 text-green-600" />
+            </div>
+          </div>
+        </CardContent>
+      </Card>
 
-      {pagination && pagination.total_pages > 1 && (
-        <div className="flex items-center justify-end space-x-2 py-4">
-          <span className="text-sm text-muted-foreground">
-            Page {pagination.page} of {pagination.total_pages}
-          </span>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
-            disabled={pagination.page === 1}
-          >
-            <ChevronLeft className="w-4 h-4" />
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setCurrentPage((prev) => Math.min(prev + 1, pagination.total_pages))}
-            disabled={pagination.page === pagination.total_pages}
-          >
-            <ChevronRight className="w-4 h-4" />
-          </Button>
-        </div>
-      )}
+      {/* Table Card */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Daftar Harga Tiket</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {isLoading ? (
+            <div className="text-center py-8 text-gray-500">Loading...</div>
+          ) : ticketPrices.length === 0 ? (
+            <div className="text-center py-8 text-gray-500">Tidak ada data harga tiket</div>
+          ) : (
+            <>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Detail Tiket</TableHead>
+                    <TableHead>Harga</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead className="text-right">Aksi</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {ticketPrices.map((tp) => (
+                    <TableRow key={tp.id_ticket_price}>
+                      <TableCell>
+                        <div>
+                          <p className="font-medium text-gray-900">{tp.gate?.name || 'N/A'}</p>
+                          <p className="text-sm text-gray-500">
+                            {tp.category?.name || 'N/A'} • {tp.dayType?.name || 'N/A'}
+                          </p>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <span className="font-semibold text-gray-900">
+                          {formatPrice(tp.price)}
+                        </span>
+                      </TableCell>
+                      <TableCell>
+                        <Badge className={tp.is_active ? "bg-green-100 text-green-800 border-green-200" : "bg-gray-100 text-gray-800 border-gray-200"}>
+                          {tp.is_active ? "Aktif" : "Nonaktif"}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex justify-end gap-2">
+                          <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            onClick={() => toggleStatusMutation.mutate(tp)}
+                            title={tp.is_active ? "Nonaktifkan" : "Aktifkan"}
+                            className={tp.is_active ? "text-yellow-600 hover:text-yellow-900 hover:bg-yellow-50" : "text-green-600 hover:text-green-900 hover:bg-green-50"}
+                          >
+                            {tp.is_active ? <PowerOff className="h-4 w-4" /> : <Power className="h-4 w-4" />}
+                          </Button>
+                          <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            onClick={() => handleEdit(tp)}
+                          >
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                          <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            className="text-red-600 hover:text-red-900 hover:bg-red-50" 
+                            onClick={() => handleDelete(tp)}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+
+              {/* Pagination */}
+              {pagination && pagination.total_pages > 1 && (
+                <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mt-6 pt-4 border-t">
+                  <div className="text-sm text-gray-600">
+                    Menampilkan <span className="font-medium">{((pagination.page - 1) * pagination.page_size) + 1}</span> - <span className="font-medium">{Math.min(pagination.page * pagination.page_size, pagination.total_records)}</span> dari <span className="font-medium">{pagination.total_records}</span> harga tiket
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setPage(page - 1)}
+                      disabled={page === 1}
+                    >
+                      Sebelumnya
+                    </Button>
+                    <div className="flex items-center gap-1">
+                      {Array.from({ length: Math.min(5, pagination.total_pages) }, (_, i) => {
+                        let pageNum;
+                        if (pagination.total_pages <= 5) {
+                          pageNum = i + 1;
+                        } else if (page <= 3) {
+                          pageNum = i + 1;
+                        } else if (page >= pagination.total_pages - 2) {
+                          pageNum = pagination.total_pages - 4 + i;
+                        } else {
+                          pageNum = page - 2 + i;
+                        }
+                        return (
+                          <Button
+                            key={pageNum}
+                            variant={page === pageNum ? "default" : "outline"}
+                            size="sm"
+                            onClick={() => setPage(pageNum)}
+                            className="w-9"
+                          >
+                            {pageNum}
+                          </Button>
+                        );
+                      })}
+                    </div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setPage(page + 1)}
+                      disabled={page === pagination.total_pages}
+                    >
+                      Selanjutnya
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </>
+          )}
+        </CardContent>
+      </Card>
 
       <TicketPriceForm 
         open={isFormOpen}
@@ -192,15 +289,19 @@ export default function TicketPrices() {
       <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+            <AlertDialogTitle>Apakah Anda yakin?</AlertDialogTitle>
             <AlertDialogDescription>
-              This action will permanently delete this ticket price.
+              Tindakan ini akan menghapus harga tiket ini secara permanen.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={confirmDelete} className="bg-red-600 hover:bg-red-700" disabled={deleteMutation.isPending}>
-              {deleteMutation.isPending ? "Deleting..." : "Delete"}
+            <AlertDialogCancel>Batal</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={confirmDelete} 
+              className="bg-red-600 hover:bg-red-700" 
+              disabled={deleteMutation.isPending}
+            >
+              {deleteMutation.isPending ? "Menghapus..." : "Hapus"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

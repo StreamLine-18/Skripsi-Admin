@@ -110,21 +110,25 @@ export default function Sidebar({ isOpen, onClose, isMobile }: SidebarProps) {
                     onOpenChange={() => setOpenMenu(openMenu === item.name ? null : item.name)}
                   >
                     <CollapsibleTrigger 
-                      className={cn(
-                        "sidebar-nav-item group w-full",
-                        isParentActive && "active"
-                      )}
+                      asChild
                     >
-                      <div className="flex items-center">
-                        <Icon className="w-4 h-4 mr-3" />
-                        <span className="text-sm">{item.name}</span>
-                      </div>
-                      <ChevronRight 
+                      <button
                         className={cn(
-                          "w-4 h-4 transition-transform duration-200",
-                          openMenu === item.name && "rotate-90"
-                        )} 
-                      />
+                          "sidebar-nav-item group w-full",
+                          isParentActive && "active"
+                        )}
+                      >
+                        <div className="flex items-center">
+                          <Icon className="w-4 h-4 mr-3" />
+                          <span className="text-sm">{item.name}</span>
+                        </div>
+                        <ChevronRight 
+                          className={cn(
+                            "w-4 h-4 transition-transform duration-200",
+                            openMenu === item.name && "rotate-90"
+                          )} 
+                        />
+                      </button>
                     </CollapsibleTrigger>
                     <CollapsibleContent className="pl-7 space-y-1 mt-1">
                       {item.subItems.map(subItem => {
@@ -259,15 +263,17 @@ export default function Sidebar({ isOpen, onClose, isMobile }: SidebarProps) {
             isOpen ? "translate-x-0" : "-translate-x-full"
           )}
         >
-          {/* Close Button */}
-          <button 
-            type="button" 
-            className="absolute top-4 -right-12 flex h-10 w-10 items-center justify-center rounded-full bg-white/10 backdrop-blur-sm text-white hover:bg-white/20 transition-colors" 
-            onClick={onClose}
-          >
-            <span className="sr-only">Close sidebar</span>
-            <X className="h-5 w-5" />
-          </button>
+          {/* Close Button - Only visible when sidebar is open */}
+          {isOpen && (
+            <button 
+              type="button" 
+              className="absolute top-4 -right-12 flex h-10 w-10 items-center justify-center rounded-full bg-white/10 backdrop-blur-sm text-white hover:bg-white/20 transition-colors" 
+              onClick={onClose}
+            >
+              <span className="sr-only">Close sidebar</span>
+              <X className="h-5 w-5" />
+            </button>
+          )}
           
           <SidebarContent />
         </div>

@@ -1,9 +1,17 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { keepPreviousData } from '@tanstack/react-query';
-import { Edit, Trash2, Plus, MapPin, ChevronLeft, ChevronRight } from "lucide-react";
+import { Edit, Trash2, Plus, MapPin } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { DataTable } from "@/components/ui/data-table";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -15,158 +23,258 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
-import { destinationApi } from "@/lib/api"; // <-- Ganti ke destinationApi
-import type { Destination } from "@/lib/api"; // <-- Ganti ke type Destination
-import { DestinationForm } from "@/components/forms/DestinationForm"; // <-- Ganti ke DestinationForm
+import { destinationApi } from "@/lib/api";
+import type { Destination } from "@/lib/api";
+import { DestinationForm } from "@/components/forms/DestinationForm";
 
-export default function DestinationsPage() { // <-- Ganti nama fungsi
+export default function DestinationsPage() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
-  const [selectedDestination, setSelectedDestination] = useState<Destination | undefined>(); // <-- Ganti state
-  const [currentPage, setCurrentPage] = useState(1);
+  const [selectedDestination, setSelectedDestination] = useState<Destination | undefined>();
+  const [page, setPage] = useState(1);
 
   const { data: apiResponse, isLoading } = useQuery({
-    queryKey: ["destinations", currentPage], // <-- Ganti queryKey
-    queryFn: () => destinationApi.getAllDestinations({ page: currentPage, pageSize: 10 }), // <-- Ganti fungsi API
+    queryKey: ["destinations", page],
+    queryFn: () => destinationApi.getAllDestinations({ page, pageSize: 10 }),
     placeholderData: keepPreviousData,
   });
 
-  const destinations: Destination[] = apiResponse?.data || []; // <-- Ganti nama variabel
+  const destinations: Destination[] = apiResponse?.data || [];
   const pagination = apiResponse?.pagination;
 
   const deleteMutation = useMutation({
-    mutationFn: (id: string) => destinationApi.deleteDestination(id), // <-- Ganti fungsi API
+    mutationFn: (id: string) => destinationApi.deleteDestination(id),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["destinations"] }); // <-- Ganti queryKey
-      toast({ title: "Success", description: "Destination deleted successfully." });
+      queryClient.invalidateQueries({ queryKey: ["destinations"] });
+      toast({ 
+        title: "Berhasil", 
+        description: "Destinasi berhasil dihapus" 
+      });
       setIsDeleteDialogOpen(false);
     },
     onError: (error: any) => {
-      toast({ title: "Error", description: error.message, variant: "destructive" });
+      toast({ 
+        title: "Gagal", 
+        description: error.message, 
+        variant: "destructive" 
+      });
     },
   });
 
   const handleCreate = () => {
-    setSelectedDestination(undefined); // <-- Ganti state
+    setSelectedDestination(undefined);
     setIsFormOpen(true);
   };
 
-  const handleEdit = (item: Destination) => { // <-- Ganti tipe parameter
-    setSelectedDestination(item); // <-- Ganti state
+  const handleEdit = (item: Destination) => {
+    setSelectedDestination(item);
     setIsFormOpen(true);
   };
 
-  const handleDelete = (item: Destination) => { // <-- Ganti tipe parameter
-    setSelectedDestination(item); // <-- Ganti state
+  const handleDelete = (item: Destination) => {
+    setSelectedDestination(item);
     setIsDeleteDialogOpen(true);
   };
 
   const confirmDelete = () => {
     if (selectedDestination) {
-      deleteMutation.mutate(selectedDestination.id_destination); // <-- Ganti ID
+      deleteMutation.mutate(selectedDestination.id_destination);
     }
   };
 
-  const columns = [
-    {
-      key: "name",
-      label: "Destination",
-      render: (item: Destination) => ( // <-- Ganti tipe parameter
-        <div className="flex items-center">
-          <div className="flex-shrink-0 h-10 w-10 rounded-full bg-slate-200 flex items-center justify-center">
-            <MapPin className="h-5 w-5 text-slate-600" /> {/* <-- Icon yang sesuai */}
-          </div>
-          <div className="ml-4">
-            <div className="text-sm font-medium text-slate-900">{item.name}</div>
-            <div className="text-xs text-slate-500">Gate: {item.gate?.name || 'N/A'}</div> {/* Tampilkan nama gate */}
-          </div>
-        </div>
-      ),
-    },
-    {
-      key: "slug",
-      label: "Slug",
-      render: (item: Destination) => <p className="text-sm text-slate-600 font-mono">{item.slug}</p>
-    },
-    {
-        key: "updated_on",
-        label: "Last Updated",
-        render: (item: Destination) => new Date(item.updated_on).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })
-    }
-  ];
-
-  const actions = (item: Destination) => ( // <-- Ganti tipe parameter
-    <div className="flex space-x-1">
-      {/* Tombol publish/unpublish bisa ditambahkan di sini jika diperlukan */}
-      <Button variant="ghost" size="sm" onClick={() => handleEdit(item)}>
-        <Edit className="h-4 w-4" />
-      </Button>
-      <Button variant="ghost" size="sm" className="text-red-600 hover:text-red-900" onClick={() => handleDelete(item)}>
-        <Trash2 className="h-4 w-4" />
-      </Button>
-    </div>
-  );
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString('id-ID', {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric'
+    });
+  };
 
   return (
-    <div className="p-4 md:p-6">
-      <div className="md:flex md:items-center md:justify-between mb-4">
-        <div className="flex-1 min-w-0">
-          <h2 className="text-2xl font-bold leading-7 text-slate-900 sm:text-3xl sm:truncate">
-            Destination Management {/* <-- Ganti judul */}
-          </h2>
-          <p className="mt-1 text-sm text-slate-500">
-            Create, edit, and manage destinations. {/* <-- Ganti deskripsi */}
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-semibold text-gray-900">
+            Destinasi
+          </h1>
+          <p className="text-sm text-gray-500 mt-1">
+            Kelola destinasi wisata yang tersedia
           </p>
         </div>
-        <div className="mt-4 flex items-center space-x-2 md:mt-0 md:ml-4">
-          <Button onClick={handleCreate}>
-            <Plus className="h-4 w-4 mr-2" />
-            Add Destination {/* <-- Ganti teks tombol */}
-          </Button>
-        </div>
+        <Button onClick={handleCreate}>
+          <Plus className="h-4 w-4 mr-2" />
+          Tambah Destinasi
+        </Button>
       </div>
 
-      <DataTable
-        title="All Destinations" // <-- Ganti judul tabel
-        description="List of all destinations available." // <-- Ganti deskripsi tabel
-        data={destinations.map(d => ({ ...d, id: d.id_destination }))} // <-- Ganti ID
-        columns={columns}
-        loading={isLoading}
-        actions={actions}
-      />
+      {/* Stats Card */}
+      <Card>
+        <CardContent className="pt-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-gray-500">Total Destinasi</p>
+              <p className="text-2xl font-semibold text-gray-900 mt-1">
+                {pagination?.total_records || 0}
+              </p>
+            </div>
+            <div className="h-12 w-12 bg-rose-100 rounded-lg flex items-center justify-center">
+              <MapPin className="h-6 w-6 text-rose-600" />
+            </div>
+          </div>
+        </CardContent>
+      </Card>
 
-      {/* ... (Kode pagination tetap sama) ... */}
-      {pagination && pagination.total_pages > 1 && (
-        <div className="flex items-center justify-end space-x-2 py-4">
-          <span className="text-sm text-muted-foreground">
-            Page {pagination.page} of {pagination.total_pages}
-          </span>
-          <Button variant="outline" size="sm" onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))} disabled={pagination.page === 1}><ChevronLeft className="w-4 h-4" /></Button>
-          <Button variant="outline" size="sm" onClick={() => setCurrentPage((prev) => Math.min(prev + 1, pagination.total_pages))} disabled={pagination.page === pagination.total_pages}><ChevronRight className="w-4 h-4" /></Button>
-        </div>
-      )}
+      {/* Table Card */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Daftar Destinasi</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {isLoading ? (
+            <div className="text-center py-8 text-gray-500">Loading...</div>
+          ) : destinations.length === 0 ? (
+            <div className="text-center py-8 text-gray-500">Tidak ada data destinasi</div>
+          ) : (
+            <>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Nama Destinasi</TableHead>
+                    <TableHead>Slug</TableHead>
+                    <TableHead>Terakhir Diupdate</TableHead>
+                    <TableHead className="text-right">Aksi</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {destinations.map((destination) => (
+                    <TableRow key={destination.id_destination}>
+                      <TableCell>
+                        <div className="flex items-center">
+                          <div className="h-10 w-10 rounded-full bg-rose-100 flex items-center justify-center flex-shrink-0">
+                            <MapPin className="h-5 w-5 text-rose-600" />
+                          </div>
+                          <div className="ml-3">
+                            <p className="font-medium text-gray-900">{destination.name}</p>
+                            <p className="text-xs text-gray-500">
+                              Gerbang: {destination.gate?.name || 'N/A'}
+                            </p>
+                          </div>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <span className="font-mono text-sm text-gray-600">
+                          {destination.slug}
+                        </span>
+                      </TableCell>
+                      <TableCell className="text-gray-600">
+                        {formatDate(destination.updated_on)}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex justify-end gap-2">
+                          <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            onClick={() => handleEdit(destination)}
+                          >
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                          <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            className="text-red-600 hover:text-red-900 hover:bg-red-50" 
+                            onClick={() => handleDelete(destination)}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
 
-      <DestinationForm // <-- Ganti komponen form
+              {/* Pagination */}
+              {pagination && pagination.total_pages > 1 && (
+                <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mt-6 pt-4 border-t">
+                  <div className="text-sm text-gray-600">
+                    Menampilkan <span className="font-medium">{((pagination.page - 1) * pagination.page_size) + 1}</span> - <span className="font-medium">{Math.min(pagination.page * pagination.page_size, pagination.total_records)}</span> dari <span className="font-medium">{pagination.total_records}</span> destinasi
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setPage(page - 1)}
+                      disabled={page === 1}
+                    >
+                      Sebelumnya
+                    </Button>
+                    <div className="flex items-center gap-1">
+                      {Array.from({ length: Math.min(5, pagination.total_pages) }, (_, i) => {
+                        let pageNum;
+                        if (pagination.total_pages <= 5) {
+                          pageNum = i + 1;
+                        } else if (page <= 3) {
+                          pageNum = i + 1;
+                        } else if (page >= pagination.total_pages - 2) {
+                          pageNum = pagination.total_pages - 4 + i;
+                        } else {
+                          pageNum = page - 2 + i;
+                        }
+                        return (
+                          <Button
+                            key={pageNum}
+                            variant={page === pageNum ? "default" : "outline"}
+                            size="sm"
+                            onClick={() => setPage(pageNum)}
+                            className="w-9"
+                          >
+                            {pageNum}
+                          </Button>
+                        );
+                      })}
+                    </div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setPage(page + 1)}
+                      disabled={page === pagination.total_pages}
+                    >
+                      Selanjutnya
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </>
+          )}
+        </CardContent>
+      </Card>
+
+      <DestinationForm
         open={isFormOpen}
         onOpenChange={setIsFormOpen}
-        destinationItem={selectedDestination} // <-- Ganti nama prop
+        destinationItem={selectedDestination}
       />
 
       <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+            <AlertDialogTitle>Apakah Anda yakin?</AlertDialogTitle>
             <AlertDialogDescription>
-              This action will permanently delete the destination "{selectedDestination?.name}". {/* <-- Ganti teks */}
+              Tindakan ini akan menghapus destinasi "{selectedDestination?.name}" secara permanen.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={confirmDelete} className="bg-red-600 hover:bg-red-700" disabled={deleteMutation.isPending}>
-              {deleteMutation.isPending ? "Deleting..." : "Delete"}
+            <AlertDialogCancel>Batal</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={confirmDelete} 
+              className="bg-red-600 hover:bg-red-700" 
+              disabled={deleteMutation.isPending}
+            >
+              {deleteMutation.isPending ? "Menghapus..." : "Hapus"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

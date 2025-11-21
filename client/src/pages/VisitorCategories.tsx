@@ -1,9 +1,17 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { keepPreviousData } from '@tanstack/react-query'
-import { Edit, Trash2, Plus, UsersRound, ChevronLeft, ChevronRight } from "lucide-react";
+import { Edit, Trash2, Plus, UsersRound } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { DataTable } from "@/components/ui/data-table";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -26,11 +34,11 @@ export default function VisitorCategories() {
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<VisitorCategory | undefined>();
-  const [currentPage, setCurrentPage] = useState(1);
+  const [page, setPage] = useState(1);
 
   const { data: apiResponse, isLoading } = useQuery({
-    queryKey: ["visitorCategories", currentPage],
-    queryFn: () => visitorCategoryApi.getVisitorCategories({ page: currentPage, pageSize: 10 }),
+    queryKey: ["visitorCategories", page],
+    queryFn: () => visitorCategoryApi.getVisitorCategories({ page, pageSize: 10 }),
     placeholderData: keepPreviousData,
   });
 
@@ -41,11 +49,18 @@ export default function VisitorCategories() {
     mutationFn: (id: string) => visitorCategoryApi.deleteVisitorCategory(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["visitorCategories"] });
-      toast({ title: "Success", description: "Visitor category deleted successfully." });
+      toast({ 
+        title: "Berhasil", 
+        description: "Kategori pengunjung berhasil dihapus" 
+      });
       setIsDeleteDialogOpen(false);
     },
     onError: (error: any) => {
-      toast({ title: "Error", description: error.message, variant: "destructive" });
+      toast({ 
+        title: "Gagal", 
+        description: error.message, 
+        variant: "destructive" 
+      });
     },
   });
 
@@ -70,86 +85,156 @@ export default function VisitorCategories() {
     }
   };
 
-  const columns = [
-    {
-      key: "name",
-      label: "Category Name",
-      render: (category: VisitorCategory) => (
-        <div className="flex items-center">
-          <div className="flex-shrink-0 h-10 w-10 rounded-full bg-slate-200 flex items-center justify-center">
-            <UsersRound className="h-5 w-5 text-slate-600" />
-          </div>
-          <div className="ml-4">
-            <div className="text-sm font-medium text-slate-900">{category.name}</div>
-            <div className="text-xs text-slate-500">{category.description}</div>
-          </div>
-        </div>
-      ),
-    },
-  ];
-
-  const actions = (category: VisitorCategory) => (
-    <div className="flex space-x-2">
-      <Button variant="ghost" size="sm" onClick={() => handleEdit(category)}>
-        <Edit className="h-4 w-4" />
-      </Button>
-      <Button variant="ghost" size="sm" className="text-red-600 hover:text-red-900" onClick={() => handleDelete(category)}>
-        <Trash2 className="h-4 w-4" />
-      </Button>
-    </div>
-  );
-
   return (
-    <div className="p-4 md:p-6">
-      <div className="md:flex md:items-center md:justify-between mb-4">
-        <div className="flex-1 min-w-0">
-          <h2 className="text-2xl font-bold leading-7 text-slate-900 sm:text-3xl sm:truncate">
-            Visitor Category Management
-          </h2>
-          <p className="mt-1 text-sm text-slate-500">
-            Manage visitor categories for ticket pricing (e.g., Domestic, International).
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-semibold text-gray-900">
+            Kategori Pengunjung
+          </h1>
+          <p className="text-sm text-gray-500 mt-1">
+            Kelola kategori pengunjung untuk penetapan harga tiket
           </p>
         </div>
-        <div className="mt-4 flex items-center space-x-2 md:mt-0 md:ml-4">
-          <Button onClick={handleCreate}>
-            <Plus className="h-4 w-4 mr-2" />
-            Add Category
-          </Button>
-        </div>
+        <Button onClick={handleCreate}>
+          <Plus className="h-4 w-4 mr-2" />
+          Tambah Kategori
+        </Button>
       </div>
 
-      <DataTable
-        title="All Visitor Categories"
-        description="List of all available visitor categories."
-        data={categories.map(cat => ({ ...cat, id: cat.id_category }))}
-        columns={columns}
-        loading={isLoading}
-        actions={actions}
-      />
+      {/* Stats Card */}
+      <Card>
+        <CardContent className="pt-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-gray-500">Total Kategori</p>
+              <p className="text-2xl font-semibold text-gray-900 mt-1">
+                {pagination?.total_records || 0}
+              </p>
+            </div>
+            <div className="h-12 w-12 bg-blue-100 rounded-lg flex items-center justify-center">
+              <UsersRound className="h-6 w-6 text-blue-600" />
+            </div>
+          </div>
+        </CardContent>
+      </Card>
 
-      {pagination && pagination.total_pages > 1 && (
-        <div className="flex items-center justify-end space-x-2 py-4">
-          <span className="text-sm text-muted-foreground">
-            Page {pagination.page} of {pagination.total_pages}
-          </span>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
-            disabled={pagination.page === 1}
-          >
-            <ChevronLeft className="w-4 h-4" />
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setCurrentPage((prev) => Math.min(prev + 1, pagination.total_pages))}
-            disabled={pagination.page === pagination.total_pages}
-          >
-            <ChevronRight className="w-4 h-4" />
-          </Button>
-        </div>
-      )}
+      {/* Table Card */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Daftar Kategori Pengunjung</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {isLoading ? (
+            <div className="text-center py-8 text-gray-500">Loading...</div>
+          ) : categories.length === 0 ? (
+            <div className="text-center py-8 text-gray-500">Tidak ada data kategori</div>
+          ) : (
+            <>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Nama Kategori</TableHead>
+                    <TableHead>Deskripsi</TableHead>
+                    <TableHead className="text-right">Aksi</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {categories.map((category) => (
+                    <TableRow key={category.id_category}>
+                      <TableCell>
+                        <div className="flex items-center">
+                          <div className="h-10 w-10 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0">
+                            <UsersRound className="h-5 w-5 text-blue-600" />
+                          </div>
+                          <span className="ml-3 font-medium text-gray-900">
+                            {category.name}
+                          </span>
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-gray-600">
+                        {category.description || "-"}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex justify-end gap-2">
+                          <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            onClick={() => handleEdit(category)}
+                          >
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                          <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            className="text-red-600 hover:text-red-900 hover:bg-red-50" 
+                            onClick={() => handleDelete(category)}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+
+              {/* Pagination */}
+              {pagination && pagination.total_pages > 1 && (
+                <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mt-6 pt-4 border-t">
+                  <div className="text-sm text-gray-600">
+                    Menampilkan <span className="font-medium">{((pagination.page - 1) * pagination.page_size) + 1}</span> - <span className="font-medium">{Math.min(pagination.page * pagination.page_size, pagination.total_records)}</span> dari <span className="font-medium">{pagination.total_records}</span> kategori
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setPage(page - 1)}
+                      disabled={page === 1}
+                    >
+                      Sebelumnya
+                    </Button>
+                    <div className="flex items-center gap-1">
+                      {Array.from({ length: Math.min(5, pagination.total_pages) }, (_, i) => {
+                        let pageNum;
+                        if (pagination.total_pages <= 5) {
+                          pageNum = i + 1;
+                        } else if (page <= 3) {
+                          pageNum = i + 1;
+                        } else if (page >= pagination.total_pages - 2) {
+                          pageNum = pagination.total_pages - 4 + i;
+                        } else {
+                          pageNum = page - 2 + i;
+                        }
+                        return (
+                          <Button
+                            key={pageNum}
+                            variant={page === pageNum ? "default" : "outline"}
+                            size="sm"
+                            onClick={() => setPage(pageNum)}
+                            className="w-9"
+                          >
+                            {pageNum}
+                          </Button>
+                        );
+                      })}
+                    </div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setPage(page + 1)}
+                      disabled={page === pagination.total_pages}
+                    >
+                      Selanjutnya
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </>
+          )}
+        </CardContent>
+      </Card>
 
       <VisitorCategoryForm 
         open={isFormOpen}
@@ -160,15 +245,19 @@ export default function VisitorCategories() {
       <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+            <AlertDialogTitle>Apakah Anda yakin?</AlertDialogTitle>
             <AlertDialogDescription>
-              This action will permanently delete the category "{selectedCategory?.name}".
+              Tindakan ini akan menghapus kategori "{selectedCategory?.name}" secara permanen.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={confirmDelete} className="bg-red-600 hover:bg-red-700" disabled={deleteMutation.isPending}>
-              {deleteMutation.isPending ? "Deleting..." : "Delete"}
+            <AlertDialogCancel>Batal</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={confirmDelete} 
+              className="bg-red-600 hover:bg-red-700" 
+              disabled={deleteMutation.isPending}
+            >
+              {deleteMutation.isPending ? "Menghapus..." : "Hapus"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

@@ -98,15 +98,85 @@ export interface InsertTicketPrice {
     is_active?: boolean;
 }
 
+export interface BookingItem {
+    id_ticket_price: string;
+    quantity: number;
+    price: number;
+    gate_name: string;
+    category_name: string;
+    day_type_name: string;
+}
+
 export interface Booking {
-  id_booking: string;
-  id_user: string;
-  total_amount: number;
-  status: string;
-  created_on: string;
-  user: User;
-  bookingDetails: BookingDetail[];
-  payment_gateway_token?: string;
+    id_booking: string;
+    id_user: string;
+    source: 'online' | 'offline';
+    leader_name: string;
+    leader_gender?: string;
+    leader_nationality?: string;
+    leader_id_type?: string;
+    leader_id_number?: string;
+    leader_phone: string;
+    visit_date: string;
+    items: BookingItem[];
+    total_amount: number;
+    status: 'Pending' | 'Success' | 'Used' | 'Expired' | 'Canceled' | 'Denied';
+    computed_status?: 'Valid' | 'Expired' | 'Used' | 'Pending';
+    payment_gateway_token?: string | null;
+    paid_at?: string | null;
+    qr_code?: string;
+    used_at?: string | null;
+    expired_at?: string;
+    created_on: string;
+    updated_on?: string;
+    user?: {
+        full_name: string;
+        email: string;
+    };
+}
+
+export interface OnsiteBookingPayload {
+    leader?: {
+        name?: string;
+        nationality?: string;
+        id_number?: string;
+        visit_date?: string;
+    };
+    ticketOrders: {
+        id_ticket_price: string;
+        quantity: number;
+    }[];
+}
+
+export interface BookingAnalytics {
+    total_bookings: number;
+    total_revenue: number;
+    by_status: Record<string, number>;
+    by_source: {
+        online: number;
+        offline: number;
+    };
+    recent_bookings: Array<{
+        id_booking: string;
+        leader_name: string;
+        total_amount: number;
+        status: string;
+        computed_status: string;
+        created_on: string;
+        user: {
+            full_name: string;
+            email: string;
+        };
+    }>;
+}
+
+export interface BookingSearchParams extends QueryParams {
+    searchField?: 'leader_name' | 'leader_phone' | 'id_booking';
+    searchValue?: string;
+    status?: string;
+    source?: 'online' | 'offline';
+    startDate?: string;
+    endDate?: string;
 }
 
 export interface BookingDetail {
@@ -117,13 +187,6 @@ export interface BookingDetail {
   used_at?: string;
   used_by?: string;
   ticketPrice: TicketPrice;
-}
-
-export interface OnsiteBookingPayload {
-    ticketOrders: {
-        id_ticket_price: string;
-        quantity: number;
-    }[];
 }
 
 export interface LoginData {
@@ -187,25 +250,65 @@ export interface Destination {
 }
 
 // --- Dashboard Specific Types ---
-export interface DashboardStats {
-    totalRevenue: number;
-    totalVisitors: number;
-    totalBookings: number;
-    totalTicketPrices: number;
-}
-
-export interface SalesChartDataPoint {
-    date: string;
-    total: number;
-}
-
-export interface DashboardData {
-    stats: DashboardStats;
-    recentBookings: Booking[];
-    charts: {
-        salesLast7Days: SalesChartDataPoint[];
-        salesLast30Days: SalesChartDataPoint[];
+export interface DashboardStatistics {
+    cards: {
+        total_bookings: {
+            value: number;
+            trend: number;
+        };
+        total_revenue: {
+            value: number;
+            label: string;
+        };
+        revenue_current_month: {
+            value: number;
+            label: string;
+        };
+        bookings_today: {
+            value: number;
+            label: string;
+        };
     };
+    monthly_revenue: {
+        month: string;
+        online: number;
+        offline: number;
+        total: number;
+        chart: Array<{
+            date: string;
+            online: number;
+            offline: number;
+        }>;
+        filter: {
+            month: number;
+            year: number;
+        } | null;
+    };
+    tickets: {
+        by_category: {
+            lokal: number;
+            mancanegara: number;
+        };
+        by_day_type: {
+            weekday: number;
+            weekend: number;
+        };
+        total: number;
+    };
+    bookings_by_gate: Array<{
+        gate: string;
+        count: number;
+        revenue: number;
+    }>;
+    booking_status: Record<string, number>;
+    recent_bookings: Array<{
+        id_booking: string;
+        leader_name: string;
+        total_amount: number;
+        status: string;
+        source: string;
+        created_on: string;
+    }>;
 }
 
 
@@ -294,21 +397,34 @@ export const ticketPriceApi = {
 };
 
 export const bookingApi = {
+    // Get all bookings with pagination and optional status filter
     getBookings: (params: QueryParams = {}) =>
-        apiRequest("GET", createUrlWithParams(`${API_BASE_URL}/admin/bookings`, params)).then(handleResponse<ApiResponse<Booking[]>>),
+        apiRequest("GET", createUrlWithParams(`${API_BASE_URL}/admin/booking`, params)).then(handleResponse<ApiResponse<Booking[]>>),
+    
+    // Get booking by ID
     getBookingById: (id: string) =>
-        apiRequest("GET", `${API_BASE_URL}/public/bookings/${id}`).then(handleResponse<ApiResponse<Booking>>),
-    getBookingDetailById: (id: string) => 
-        apiRequest("GET", `${API_BASE_URL}/admin/booking-details/${id}`).then(handleResponse<ApiResponse<BookingDetail>>),
-    redeemBooking: (bookingDetailId: string) =>
-        apiRequest("POST", `${API_BASE_URL}/admin/bookings/redeem`, { bookingDetailId }).then(handleResponse),
-    createOnsiteBooking: (data: OnsiteBookingPayload) => // New function for onsite sales
-        apiRequest("POST", `${API_BASE_URL}/admin/bookings/onsite`, data).then(handleResponse<ApiResponse<Booking>>),
+        apiRequest("GET", `${API_BASE_URL}/admin/booking/${id}`).then(handleResponse<ApiResponse<Booking>>),
+    
+    // Get booking analytics
+    getAnalytics: () =>
+        apiRequest("GET", `${API_BASE_URL}/admin/booking/analytics`).then(handleResponse<ApiResponse<BookingAnalytics>>),
+    
+    // Search bookings with filters
+    searchBookings: (params: BookingSearchParams = {}) =>
+        apiRequest("GET", createUrlWithParams(`${API_BASE_URL}/admin/booking/search`, params)).then(handleResponse<ApiResponse<Booking[]>>),
+    
+    // Create on-site booking
+    createOnsiteBooking: (data: OnsiteBookingPayload) =>
+        apiRequest("POST", `${API_BASE_URL}/admin/booking/onsite`, data).then(handleResponse<ApiResponse<Booking>>),
+    
+    // Redeem booking by scanning QR code
+    redeemBooking: (id_booking: string) =>
+        apiRequest("POST", `${API_BASE_URL}/admin/booking/redeem`, { id_booking }).then(handleResponse<ApiResponse<Booking>>),
 };
 
 export const dashboardApi = {
-    getSummary: () =>
-        apiRequest("GET", `${API_BASE_URL}/admin/dashboard`).then(handleResponse<ApiResponse<DashboardData>>),
+    getStatistics: (params?: { month?: number; year?: number; gate?: string }) =>
+        apiRequest("GET", createUrlWithParams(`${API_BASE_URL}/admin/dashboard/statistics`, params || {})).then(handleResponse<ApiResponse<DashboardStatistics>>),
 };
 
 export const newsApi = {

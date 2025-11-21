@@ -1,133 +1,412 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { keepPreviousData } from '@tanstack/react-query'
-import { Eye, ChevronLeft, ChevronRight } from "lucide-react";
+import { keepPreviousData } from '@tanstack/react-query';
+import { Eye, Ticket, TrendingUp, Users, DollarSign, Search, Filter, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { DataTable } from "@/components/ui/data-table";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { bookingApi } from "@/lib/api";
 import type { Booking } from "@/lib/api";
 import { Link } from "wouter";
 
 export default function Bookings() {
-  const [currentPage, setCurrentPage] = useState(1);
+  const [page, setPage] = useState(1);
+  const [statusFilter, setStatusFilter] = useState<string>("");
+  const [sourceFilter, setSourceFilter] = useState<string>("");
+  const [searchField, setSearchField] = useState<string>("leader_name");
+  const [searchValue, setSearchValue] = useState<string>("");
+  const [isSearching, setIsSearching] = useState(false);
 
+  // Get analytics
+  const { data: analyticsResponse } = useQuery({
+    queryKey: ["bookingAnalytics"],
+    queryFn: () => bookingApi.getAnalytics(),
+  });
+
+  const analytics = analyticsResponse?.data;
+
+  // Get bookings with filters
   const { data: apiResponse, isLoading } = useQuery({
-    queryKey: ["bookings", currentPage],
-    queryFn: () => bookingApi.getBookings({ page: currentPage, pageSize: 10 }),
+    queryKey: ["bookings", page, statusFilter, sourceFilter, searchField, searchValue, isSearching],
+    queryFn: () => {
+      if (isSearching && searchValue) {
+        return bookingApi.searchBookings({
+          page,
+          pageSize: 10,
+          searchField: searchField as any,
+          searchValue,
+          status: statusFilter || undefined,
+          source: sourceFilter as any || undefined,
+        });
+      }
+      return bookingApi.getBookings({
+        page,
+        pageSize: 10,
+        status: statusFilter || undefined,
+      });
+    },
     placeholderData: keepPreviousData,
   });
+
+  const formatDate = (dateStr: string | number | Date | null | undefined) => {
+    if (!dateStr) return "-";
+    const d = new Date(dateStr);
+    return d.toLocaleDateString("id-ID", {
+      day: "numeric",
+      month: "long",
+      year: "numeric",
+    });
+  };
 
   const bookings: Booking[] = apiResponse?.data || [];
   const pagination = apiResponse?.pagination;
 
-  const columns = [
-    {
-      key: "id",
-      label: "Booking ID",
-      render: (booking: Booking) => (
-        <div className="font-mono text-sm">{booking.id_booking}</div>
-      ),
-    },
-    {
-      key: "visitor",
-      label: "Visitor",
-      render: (booking: Booking) => (
-        <div className="text-sm font-medium text-slate-900">{booking.user?.full_name || 'N/A'}</div>
-      ),
-    },
-    {
-      key: "amount",
-      label: "Amount",
-      render: (booking: Booking) => (
-        <div className="text-sm">
-          {new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR' }).format(Number(booking.total_amount))}
-        </div>
-      ),
-    },
-    {
-      key: "status",
-      label: "Status",
-      render: (booking: Booking) => {
-        let colorClass = "bg-slate-100 text-slate-800";
-        if (booking.status === 'Success') colorClass = "bg-emerald-100 text-emerald-800";
-        if (booking.status === 'Pending') colorClass = "bg-amber-100 text-amber-800";
-        if (booking.status === 'Canceled' || booking.status === 'Expired' || booking.status === 'Denied') colorClass = "bg-red-100 text-red-800";
-        
-        return <Badge className={colorClass}>{booking.status}</Badge>;
-      }
-    },
-    {
-      key: "method",
-      label: "Payment Method",
-      render: (booking: Booking) => {
-        if (booking.payment_gateway_token) {
-          return <Badge className="bg-emerald-100 text-emerald-800">Online</Badge>;
-        }
-        return <Badge className=" bg-amber-100 text-amber-800">On-Site</Badge>;
-      }
-    },
-    {
-      key: "date",
-      label: "Date",
-      render: (booking: Booking) => new Date(booking.created_on).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })
-    },
-  ];
+  const handleSearch = () => {
+    setIsSearching(true);
+    setPage(1);
+  };
 
-  const actions = (booking: Booking) => (
-    <Link href={`/bookings/${booking.id_booking}`}>
-      <Button variant="ghost" size="sm">
-        <Eye className="h-4 w-4 mr-2" />
-        View Details
-      </Button>
-    </Link>
-  );
+  const handleClearSearch = () => {
+    setSearchValue("");
+    setIsSearching(false);
+    setStatusFilter("");
+    setSourceFilter("");
+    setPage(1);
+  };
+
+  const formatPrice = (price: number) => {
+    return new Intl.NumberFormat('id-ID', {
+      style: 'currency',
+      currency: 'IDR',
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0
+    }).format(Number(price));
+  };
+
+  const getStatusBadge = (booking: Booking) => {
+    const status = booking.computed_status || booking.status;
+    const colorMap: Record<string, string> = {
+      'Valid': 'bg-green-100 text-green-800 border-green-200',
+      'Success': 'bg-green-100 text-green-800 border-green-200',
+      'Used': 'bg-blue-100 text-blue-800 border-blue-200',
+      'Pending': 'bg-yellow-100 text-yellow-800 border-yellow-200',
+      'Expired': 'bg-red-100 text-red-800 border-red-200',
+      'Canceled': 'bg-gray-100 text-gray-800 border-gray-200',
+      'Denied': 'bg-red-100 text-red-800 border-red-200',
+    };
+
+    const labelMap: Record<string, string> = {
+      'Valid': 'Valid',
+      'Success': 'Berhasil',
+      'Used': 'Terpakai',
+      'Pending': 'Menunggu',
+      'Expired': 'Kadaluarsa',
+      'Canceled': 'Dibatalkan',
+      'Denied': 'Ditolak',
+    };
+
+    return (
+      <Badge className={colorMap[status] || 'bg-gray-100 text-gray-800 border-gray-200'}>
+        {labelMap[status] || status}
+      </Badge>
+    );
+  };
 
   return (
-    <div className="p-4 md:p-6">
-      <div className="md:flex md:items-center md:justify-between mb-4">
-        <div className="flex-1 min-w-0">
-          <h2 className="text-2xl font-bold leading-7 text-slate-900 sm:text-3xl sm:truncate">
-            All Bookings
-          </h2>
-          <p className="mt-1 text-sm text-slate-500">
-            A list of all bookings made in the system.
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-semibold text-gray-900">
+            Booking
+          </h1>
+          <p className="text-sm text-gray-500 mt-1">
+            Kelola dan pantau semua transaksi booking
           </p>
         </div>
+        <Link href="/onsite-booking">
+          <Button className="bg-green-600 hover:bg-green-700">
+            <Plus className="h-4 w-4 mr-2" />
+            Booking On-Site
+          </Button>
+        </Link>
       </div>
 
-      <DataTable
-        title="Booking History"
-        description="Browse and review all booking transactions."
-        data={bookings.map(b => ({ ...b, id: b.id_booking }))}
-        columns={columns}
-        loading={isLoading}
-        actions={actions}
-      />
+      {/* Analytics Cards */}
+      {analytics && (
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <Card>
+            <CardContent className="pt-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-gray-500">Total Booking</p>
+                  <p className="text-2xl font-semibold text-gray-900 mt-1">
+                    {analytics.total_bookings}
+                  </p>
+                </div>
+                <div className="h-12 w-12 bg-blue-100 rounded-lg flex items-center justify-center">
+                  <Ticket className="h-6 w-6 text-blue-600" />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
 
-      {pagination && pagination.total_pages > 1 && (
-        <div className="flex items-center justify-end space-x-2 py-4">
-          <span className="text-sm text-muted-foreground">
-            Page {pagination.page} of {pagination.total_pages}
-          </span>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
-            disabled={pagination.page === 1}
-          >
-            <ChevronLeft className="w-4 h-4" />
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setCurrentPage((prev) => Math.min(prev + 1, pagination.total_pages))}
-            disabled={pagination.page === pagination.total_pages}
-          >
-            <ChevronRight className="w-4 h-4" />
-          </Button>
+          <Card>
+            <CardContent className="pt-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-gray-500">Total Pendapatan</p>
+                  <p className="text-2xl font-semibold text-gray-900 mt-1">
+                    {formatPrice(analytics.total_revenue)}
+                  </p>
+                </div>
+                <div className="h-12 w-12 bg-green-100 rounded-lg flex items-center justify-center">
+                  <DollarSign className="h-6 w-6 text-green-600" />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardContent className="pt-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-gray-500">Booking Online</p>
+                  <p className="text-2xl font-semibold text-gray-900 mt-1">
+                    {analytics.by_source.online}
+                  </p>
+                </div>
+                <div className="h-12 w-12 bg-purple-100 rounded-lg flex items-center justify-center">
+                  <TrendingUp className="h-6 w-6 text-purple-600" />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardContent className="pt-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-gray-500">Booking On-Site</p>
+                  <p className="text-2xl font-semibold text-gray-900 mt-1">
+                    {analytics.by_source.offline}
+                  </p>
+                </div>
+                <div className="h-12 w-12 bg-orange-100 rounded-lg flex items-center justify-center">
+                  <Users className="h-6 w-6 text-orange-600" />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
         </div>
       )}
+
+      {/* Search and Filter */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Filter className="h-5 w-5" />
+            Pencarian & Filter
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+            <Select value={searchField} onValueChange={setSearchField}>
+              <SelectTrigger>
+                <SelectValue placeholder="Cari berdasarkan" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="leader_name">Nama Pemimpin</SelectItem>
+                <SelectItem value="leader_phone">No. Telepon</SelectItem>
+                <SelectItem value="id_booking">ID Booking</SelectItem>
+              </SelectContent>
+            </Select>
+
+            <Input
+              placeholder="Masukkan kata kunci..."
+              value={searchValue}
+              onChange={(e) => setSearchValue(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+            />
+
+            <Select value={sourceFilter || "all"} onValueChange={(val) => setSourceFilter(val === "all" ? "" : val)}>
+              <SelectTrigger>
+                <SelectValue placeholder="Semua Sumber" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Semua Sumber</SelectItem>
+                <SelectItem value="online">Online</SelectItem>
+                <SelectItem value="offline">On-Site</SelectItem>
+              </SelectContent>
+            </Select>
+
+            <Select value={statusFilter || "all"} onValueChange={(val) => setStatusFilter(val === "all" ? "" : val)}>
+              <SelectTrigger>
+                <SelectValue placeholder="Semua Status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Semua Status</SelectItem>
+                <SelectItem value="Success">Berhasil</SelectItem>
+                <SelectItem value="Pending">Menunggu</SelectItem>
+                <SelectItem value="Used">Terpakai</SelectItem>
+                <SelectItem value="Expired">Kadaluarsa</SelectItem>
+              </SelectContent>
+            </Select>
+
+            <div className="flex gap-2">
+              <Button onClick={handleSearch} className="flex-1">
+                <Search className="h-4 w-4 mr-2" />
+                Cari
+              </Button>
+              {(searchValue || statusFilter || sourceFilter) && (
+                <Button variant="outline" onClick={handleClearSearch}>
+                  Reset
+                </Button>
+              )}
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Table Card */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Daftar Booking</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {isLoading ? (
+            <div className="text-center py-8 text-gray-500">Loading...</div>
+          ) : bookings.length === 0 ? (
+            <div className="text-center py-8 text-gray-500">Tidak ada data booking</div>
+          ) : (
+            <>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>ID Booking</TableHead>
+                    <TableHead>Pemimpin Grup</TableHead>
+                    <TableHead>Tanggal Kunjungan</TableHead>
+                    <TableHead>Total</TableHead>
+                    <TableHead>Sumber</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead className="text-right">Aksi</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {bookings.map((booking) => (
+                    <TableRow key={booking.id_booking}>
+                      <TableCell>
+                        <div className="font-mono text-xs text-gray-600">
+                          {booking.id_booking.substring(0, 8)}...
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div>
+                          <p className="font-medium text-gray-900">{booking.leader_name}</p>
+                          <p className="text-sm text-gray-500">{booking.leader_phone}</p>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <span className="text-gray-900">
+                          {formatDate(booking.visit_date)}
+                        </span>
+                      </TableCell>
+                      <TableCell>
+                        <span className="font-semibold text-gray-900">
+                          {formatPrice(booking.total_amount)}
+                        </span>
+                      </TableCell>
+                      <TableCell>
+                        <Badge className={booking.source === 'online' ? 'bg-purple-100 text-purple-800 border-purple-200' : 'bg-orange-100 text-orange-800 border-orange-200'}>
+                          {booking.source === 'online' ? 'Online' : 'On-Site'}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        {getStatusBadge(booking)}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <Link href={`/bookings/${booking.id_booking}`}>
+                          <Button variant="ghost" size="sm">
+                            <Eye className="h-4 w-4" />
+                          </Button>
+                        </Link>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+
+              {/* Pagination */}
+              {pagination && pagination.total_pages > 1 && (
+                <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mt-6 pt-4 border-t">
+                  <div className="text-sm text-gray-600">
+                    Menampilkan <span className="font-medium">{((pagination.page - 1) * pagination.page_size) + 1}</span> - <span className="font-medium">{Math.min(pagination.page * pagination.page_size, pagination.total_records)}</span> dari <span className="font-medium">{pagination.total_records}</span> booking
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setPage(page - 1)}
+                      disabled={page === 1}
+                    >
+                      Sebelumnya
+                    </Button>
+                    <div className="flex items-center gap-1">
+                      {Array.from({ length: Math.min(5, pagination.total_pages) }, (_, i) => {
+                        let pageNum;
+                        if (pagination.total_pages <= 5) {
+                          pageNum = i + 1;
+                        } else if (page <= 3) {
+                          pageNum = i + 1;
+                        } else if (page >= pagination.total_pages - 2) {
+                          pageNum = pagination.total_pages - 4 + i;
+                        } else {
+                          pageNum = page - 2 + i;
+                        }
+                        return (
+                          <Button
+                            key={pageNum}
+                            variant={page === pageNum ? "default" : "outline"}
+                            size="sm"
+                            onClick={() => setPage(pageNum)}
+                            className="w-9"
+                          >
+                            {pageNum}
+                          </Button>
+                        );
+                      })}
+                    </div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setPage(page + 1)}
+                      disabled={page === pagination.total_pages}
+                    >
+                      Selanjutnya
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 }

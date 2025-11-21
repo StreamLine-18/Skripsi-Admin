@@ -1,10 +1,18 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { keepPreviousData } from '@tanstack/react-query';
-import { Edit, Trash2, Plus, Newspaper, ChevronLeft, ChevronRight, Power, PowerOff } from "lucide-react";
+import { Edit, Trash2, Plus, Newspaper, Power, PowerOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { DataTable } from "@/components/ui/data-table";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -27,11 +35,11 @@ export default function NewsPage() {
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [selectedNews, setSelectedNews] = useState<News | undefined>();
-  const [currentPage, setCurrentPage] = useState(1);
+  const [page, setPage] = useState(1);
 
   const { data: apiResponse, isLoading } = useQuery({
-    queryKey: ["news", currentPage],
-    queryFn: () => newsApi.getAllNews({ page: currentPage, pageSize: 10 }),
+    queryKey: ["news", page],
+    queryFn: () => newsApi.getAllNews({ page, pageSize: 10 }),
     placeholderData: keepPreviousData,
   });
 
@@ -42,34 +50,46 @@ export default function NewsPage() {
     mutationFn: (id: string) => newsApi.deleteNews(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["news"] });
-      toast({ title: "Success", description: "News article deleted successfully." });
+      toast({ 
+        title: "Berhasil", 
+        description: "Berita berhasil dihapus" 
+      });
       setIsDeleteDialogOpen(false);
     },
     onError: (error: any) => {
-      toast({ title: "Error", description: error.message, variant: "destructive" });
+      toast({ 
+        title: "Gagal", 
+        description: error.message, 
+        variant: "destructive" 
+      });
     },
   });
 
   const toggleStatusMutation = useMutation({
     mutationFn: (newsItem: News) => {
-        const newStatus = newsItem.status === "Published" ? "Draft" : "Published";
-        // Endpoint update menggunakan FormData, jadi kita harus mengirim data dalam format ini.
-        const formData = new FormData();
-        formData.append('status', newStatus);
-        formData.append('title', newsItem.title); // Kirim data yang ada untuk menghindari validasi error di backend
-        formData.append('content', newsItem.content);
-        return newsApi.updateNews(newsItem.id_news, formData);
+      const newStatus = newsItem.status === "Published" ? "Draft" : "Published";
+      const formData = new FormData();
+      formData.append('status', newStatus);
+      formData.append('title', newsItem.title);
+      formData.append('content', newsItem.content);
+      return newsApi.updateNews(newsItem.id_news, formData);
     },
     onSuccess: (_, newsItem) => {
-        queryClient.invalidateQueries({ queryKey: ["news"] });
-        const newStatus = newsItem.status === "Published" ? "Unpublished" : "Published";
-        toast({ title: "Success", description: `Article has been ${newStatus}.` });
+      queryClient.invalidateQueries({ queryKey: ["news"] });
+      const newStatus = newsItem.status === "Published" ? "dinonaktifkan" : "dipublikasikan";
+      toast({ 
+        title: "Berhasil", 
+        description: `Berita berhasil ${newStatus}` 
+      });
     },
     onError: (error: any) => {
-        toast({ title: "Error", description: error.message, variant: "destructive" });
+      toast({ 
+        title: "Gagal", 
+        description: error.message, 
+        variant: "destructive" 
+      });
     }
   });
-
 
   const handleCreate = () => {
     setSelectedNews(undefined);
@@ -92,103 +112,178 @@ export default function NewsPage() {
     }
   };
 
-  const columns = [
-    {
-      key: "title",
-      label: "Title",
-      render: (item: News) => (
-        <div className="flex items-center">
-          <div className="flex-shrink-0 h-10 w-10 rounded-full bg-slate-200 flex items-center justify-center">
-            <Newspaper className="h-5 w-5 text-slate-600" />
-          </div>
-          <div className="ml-4">
-            <div className="text-sm font-medium text-slate-900">{item.title}</div>
-            <div className="text-xs text-slate-500">By {item.author_name}</div>
-          </div>
-        </div>
-      ),
-    },
-    {
-      key: "status",
-      label: "Status",
-      render: (item: News) => (
-        <Badge variant={item.status === 'Published' ? "default" : "secondary"} className={item.status === 'Published' ? "bg-emerald-100 text-emerald-800" : "bg-slate-100 text-slate-800"}>
-          {item.status}
-        </Badge>
-      ),
-    },
-    {
-        key: "published_at",
-        label: "Published Date",
-        render: (item: News) => item.published_at ? new Date(item.published_at).toLocaleDateString('en-GB') : 'Not Published'
-    }
-  ];
-
-  const actions = (item: News) => (
-    <div className="flex space-x-1">
-      <Button variant="ghost" size="sm" onClick={() => toggleStatusMutation.mutate(item)} title={item.status === 'Published' ? "Unpublish" : "Publish"}>
-        {item.status === 'Published' ? <PowerOff className="h-4 w-4 text-yellow-600" /> : <Power className="h-4 w-4 text-emerald-600" />}
-      </Button>
-      <Button variant="ghost" size="sm" onClick={() => handleEdit(item)}>
-        <Edit className="h-4 w-4" />
-      </Button>
-      <Button variant="ghost" size="sm" className="text-red-600 hover:text-red-900" onClick={() => handleDelete(item)}>
-        <Trash2 className="h-4 w-4" />
-      </Button>
-    </div>
-  );
-
   return (
-    <div className="p-4 md:p-6">
-      <div className="md:flex md:items-center md:justify-between mb-4">
-        <div className="flex-1 min-w-0">
-          <h2 className="text-2xl font-bold leading-7 text-slate-900 sm:text-3xl sm:truncate">
-            News Management
-          </h2>
-          <p className="mt-1 text-sm text-slate-500">
-            Create, edit, and manage news articles.
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-semibold text-gray-900">
+            Berita
+          </h1>
+          <p className="text-sm text-gray-500 mt-1">
+            Kelola dan publikasikan berita wisata
           </p>
         </div>
-        <div className="mt-4 flex items-center space-x-2 md:mt-0 md:ml-4">
-          <Button onClick={handleCreate}>
-            <Plus className="h-4 w-4 mr-2" />
-            Add News
-          </Button>
-        </div>
+        <Button onClick={handleCreate}>
+          <Plus className="h-4 w-4 mr-2" />
+          Tambah Berita
+        </Button>
       </div>
 
-      <DataTable
-        title="All News Articles"
-        description="List of all news articles."
-        data={news.map(n => ({ ...n, id: n.id_news }))}
-        columns={columns}
-        loading={isLoading}
-        actions={actions}
-      />
+      {/* Stats Card */}
+      <Card>
+        <CardContent className="pt-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-gray-500">Total Berita</p>
+              <p className="text-2xl font-semibold text-gray-900 mt-1">
+                {pagination?.total_records || 0}
+              </p>
+            </div>
+            <div className="h-12 w-12 bg-green-100 rounded-lg flex items-center justify-center">
+              <Newspaper className="h-6 w-6 text-green-600" />
+            </div>
+          </div>
+        </CardContent>
+      </Card>
 
-      {pagination && pagination.total_pages > 1 && (
-        <div className="flex items-center justify-end space-x-2 py-4">
-          <span className="text-sm text-muted-foreground">
-            Page {pagination.page} of {pagination.total_pages}
-          </span>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
-            disabled={pagination.page === 1}
-          >
-            <ChevronLeft className="w-4 h-4" />
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setCurrentPage((prev) => Math.min(prev + 1, pagination.total_pages))}
-            disabled={pagination.page === pagination.total_pages}
-          >
-            <ChevronRight className="w-4 h-4" />
-          </Button>
-        </div>
-      )}
+      {/* Table Card */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Daftar Berita</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {isLoading ? (
+            <div className="text-center py-8 text-gray-500">Loading...</div>
+          ) : news.length === 0 ? (
+            <div className="text-center py-8 text-gray-500">Tidak ada data berita</div>
+          ) : (
+            <>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Judul</TableHead>
+                    <TableHead>Tanggal Publikasi</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead className="text-right">Aksi</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {news.map((newsItem) => (
+                    <TableRow key={newsItem.id_news}>
+                      <TableCell>
+                        <div>
+                          <p className="font-medium text-gray-900">{newsItem.title}</p>
+                          <p className="text-sm text-gray-500 mt-1">
+                            Oleh {newsItem.author_name}
+                          </p>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <span className="text-gray-900">
+                          {newsItem.published_at 
+                            ? new Date(newsItem.published_at).toLocaleDateString('id-ID', { 
+                                year: 'numeric', 
+                                month: 'long', 
+                                day: 'numeric' 
+                              })
+                            : 'Belum Dipublikasi'
+                          }
+                        </span>
+                      </TableCell>
+                      <TableCell>
+                        <Badge className={newsItem.status === 'Published' ? "bg-green-100 text-green-800 border-green-200" : "bg-gray-100 text-gray-800 border-gray-200"}>
+                          {newsItem.status === 'Published' ? 'Dipublikasi' : 'Draft'}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex justify-end gap-2">
+                          <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            onClick={() => toggleStatusMutation.mutate(newsItem)}
+                            title={newsItem.status === 'Published' ? "Nonaktifkan" : "Publikasikan"}
+                            className={newsItem.status === 'Published' ? "text-yellow-600 hover:text-yellow-900 hover:bg-yellow-50" : "text-green-600 hover:text-green-900 hover:bg-green-50"}
+                          >
+                            {newsItem.status === 'Published' ? <PowerOff className="h-4 w-4" /> : <Power className="h-4 w-4" />}
+                          </Button>
+                          <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            onClick={() => handleEdit(newsItem)}
+                          >
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                          <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            className="text-red-600 hover:text-red-900 hover:bg-red-50" 
+                            onClick={() => handleDelete(newsItem)}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+
+              {/* Pagination */}
+              {pagination && pagination.total_pages > 1 && (
+                <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mt-6 pt-4 border-t">
+                  <div className="text-sm text-gray-600">
+                    Menampilkan <span className="font-medium">{((pagination.page - 1) * pagination.page_size) + 1}</span> - <span className="font-medium">{Math.min(pagination.page * pagination.page_size, pagination.total_records)}</span> dari <span className="font-medium">{pagination.total_records}</span> berita
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setPage(page - 1)}
+                      disabled={page === 1}
+                    >
+                      Sebelumnya
+                    </Button>
+                    <div className="flex items-center gap-1">
+                      {Array.from({ length: Math.min(5, pagination.total_pages) }, (_, i) => {
+                        let pageNum;
+                        if (pagination.total_pages <= 5) {
+                          pageNum = i + 1;
+                        } else if (page <= 3) {
+                          pageNum = i + 1;
+                        } else if (page >= pagination.total_pages - 2) {
+                          pageNum = pagination.total_pages - 4 + i;
+                        } else {
+                          pageNum = page - 2 + i;
+                        }
+                        return (
+                          <Button
+                            key={pageNum}
+                            variant={page === pageNum ? "default" : "outline"}
+                            size="sm"
+                            onClick={() => setPage(pageNum)}
+                            className="w-9"
+                          >
+                            {pageNum}
+                          </Button>
+                        );
+                      })}
+                    </div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setPage(page + 1)}
+                      disabled={page === pagination.total_pages}
+                    >
+                      Selanjutnya
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </>
+          )}
+        </CardContent>
+      </Card>
 
       <NewsForm
         open={isFormOpen}
@@ -199,15 +294,19 @@ export default function NewsPage() {
       <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+            <AlertDialogTitle>Apakah Anda yakin?</AlertDialogTitle>
             <AlertDialogDescription>
-              This action will permanently delete the article "{selectedNews?.title}".
+              Tindakan ini akan menghapus berita "{selectedNews?.title}" secara permanen.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={confirmDelete} className="bg-red-600 hover:bg-red-700" disabled={deleteMutation.isPending}>
-              {deleteMutation.isPending ? "Deleting..." : "Delete"}
+            <AlertDialogCancel>Batal</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={confirmDelete} 
+              className="bg-red-600 hover:bg-red-700" 
+              disabled={deleteMutation.isPending}
+            >
+              {deleteMutation.isPending ? "Menghapus..." : "Hapus"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

@@ -13,11 +13,11 @@ export default function TopBar({ onMenuClick }: TopBarProps) {
   };
 
   return (
-    <div className="relative z-10 flex-shrink-0 flex h-16 bg-white border-b border-slate-200/60">
+    <div className="relative z-10 flex-shrink-0 flex h-16 bg-white border-b border-slate-200">
       {/* Mobile menu button */}
       <button
         type="button"
-        className="md:hidden h-16 w-16 border-r border-slate-200/60 text-slate-600 hover:bg-slate-50 hover:text-slate-900 focus:outline-none transition-colors"
+        className="md:hidden h-16 w-16 border-r border-slate-300 text-slate-600 hover:bg-slate-50 hover:text-slate-950 focus:outline-none transition-colors"
         onClick={onMenuClick}
         aria-label="Open menu"
       >
@@ -42,7 +42,7 @@ export default function TopBar({ onMenuClick }: TopBarProps) {
           <Button 
             variant="ghost" 
             size="icon" 
-            className="h-9 w-9 text-slate-500 hover:text-slate-900 hover:bg-slate-100 transition-colors" 
+            className="h-9 w-9 text-slate-900 hover:text-slate-900 hover:bg-slate-100 transition-colors bg-slate-300/50" 
             onClick={logout}
             title="Logout"
           >
