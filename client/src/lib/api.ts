@@ -532,6 +532,56 @@ export interface SKMStatistics {
     };
 }
 
+export interface SKMAnalytics {
+    summary: {
+        ikm_score: {
+            value: number;
+            converted: number;
+            category: string;
+            color: string;
+            label: string;
+        };
+        total_responses: {
+            value: number;
+            label: string;
+        };
+        best_dimension: {
+            label: string;
+            score: number;
+        };
+        lowest_dimension: {
+            label: string;
+            score: number;
+        };
+        average_age: {
+            value: number;
+            label: string;
+        };
+    };
+    dimension_scores: Array<{
+        dimension: string;
+        label: string;
+        score: number;
+    }>;
+    education_distribution: Array<{
+        education: string;
+        count: number;
+    }>;
+    gender_distribution: Array<{
+        gender: string;
+        count: number;
+        percentage: number;
+    }>;
+    age_distribution: Array<{
+        label: string;
+        count: number;
+    }>;
+    daily_survey_trend: Array<{
+        date: string;
+        count: number;
+    }>;
+}
+
 export const skmApi = {
     getSurveys: (params: QueryParams = {}) =>
         apiRequest("GET", createUrlWithParams(`${API_BASE_URL}/admin/skm`, params)).then(handleResponse<ApiResponse<SKMSurvey[]>>),
@@ -539,6 +589,8 @@ export const skmApi = {
         apiRequest("GET", createUrlWithParams(`${API_BASE_URL}/admin/skm/search`, params)).then(handleResponse<ApiResponse<SKMSurvey[]>>),
     getStatistics: () =>
         apiRequest("GET", `${API_BASE_URL}/admin/skm/statistics`).then(handleResponse<ApiResponse<SKMStatistics>>),
+    getAnalytics: (params?: { month?: number; year?: number; startDate?: string; endDate?: string }) =>
+        apiRequest("GET", createUrlWithParams(`${API_BASE_URL}/admin/skm/analytics`, params || {})).then(handleResponse<ApiResponse<SKMAnalytics>>),
     getSurveyById: (id: string) =>
         apiRequest("GET", `${API_BASE_URL}/admin/skm/${id}`).then(handleResponse<ApiResponse<SKMSurvey>>),
     deleteSurvey: (id: string) =>

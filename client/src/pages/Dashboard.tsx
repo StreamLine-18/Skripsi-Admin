@@ -1,9 +1,9 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { 
-  Ticket, 
-  DollarSign, 
-  QrCode, 
+import {
+  Ticket,
+  DollarSign,
+  QrCode,
   TrendingUp,
   TrendingDown,
   Calendar,
@@ -15,7 +15,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Link } from "wouter";
-import { dashboardApi } from "@/lib/api";
+import { dashboardApi, gateApi } from "@/lib/api";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, AreaChart, Area, XAxis, YAxis, CartesianGrid, BarChart, Bar } from 'recharts';
 
 export default function Dashboard() {
@@ -24,15 +24,21 @@ export default function Dashboard() {
   const [selectedYear, setSelectedYear] = useState(currentDate.getFullYear());
   const [selectedGate, setSelectedGate] = useState<string>("");
 
-  const { data: statsResponse, isLoading } = useQuery({ 
-    queryKey: ["dashboardStatistics", selectedMonth, selectedYear, selectedGate], 
-    queryFn: () => dashboardApi.getStatistics({ 
-      month: selectedMonth, 
+  const { data: statsResponse, isLoading } = useQuery({
+    queryKey: ["dashboardStatistics", selectedMonth, selectedYear, selectedGate],
+    queryFn: () => dashboardApi.getStatistics({
+      month: selectedMonth,
       year: selectedYear,
       gate: selectedGate || undefined
     }),
   });
-  
+
+  // Fetch all gates for the dropdown
+  const { data: gatesResponse } = useQuery({
+    queryKey: ["gates"],
+    queryFn: () => gateApi.getGates({ pageSize: 100 }),
+  });
+
   const stats = statsResponse?.data;
 
   const formatPrice = (price: number) => {
@@ -143,12 +149,12 @@ export default function Dashboard() {
         <>
           {/* Top 4 Cards */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            {/* Total Bookings */}
+            {/* Total Pemesanan */}
             <Card className="bg-gradient-to-br from-blue-50 to-blue-100 border-blue-200">
               <CardContent className="pt-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm font-medium text-blue-700">Total Booking</p>
+                    <p className="text-sm font-medium text-blue-700">Total Pemesanan</p>
                     <p className="text-3xl font-bold text-blue-900 mt-2">
                       {stats.cards.total_bookings.value.toLocaleString()}
                     </p>
@@ -196,7 +202,7 @@ export default function Dashboard() {
               <CardContent className="pt-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm font-medium text-purple-700">Pendapatan Bulan Ini</p>
+                    <p className="text-sm font-medium text-purple-700">Pendapatan Bulanan</p>
                     <p className="text-3xl font-bold text-purple-900 mt-2">
                       {formatCompactPrice(stats.cards.revenue_current_month.value)}
                     </p>
@@ -216,7 +222,7 @@ export default function Dashboard() {
               <CardContent className="pt-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm font-medium text-orange-700">Booking Hari Ini</p>
+                    <p className="text-sm font-medium text-orange-700">Pemesanan Hari Ini</p>
                     <p className="text-3xl font-bold text-orange-900 mt-2">
                       {stats.cards.bookings_today.value}
                     </p>
@@ -238,7 +244,7 @@ export default function Dashboard() {
               <div className="flex flex-col md:flex-row items-start md:items-center gap-4">
                 <div className="flex items-center gap-2">
                   <Calendar className="h-5 w-5 text-gray-600" />
-                  <span className="text-sm font-semibold text-gray-700">Filter Data:</span>
+                  <span className="text-sm font-semibold text-gray-700">Filter Laporan</span>
                 </div>
                 <div className="flex flex-wrap items-center gap-3 flex-1">
                   <div className="flex items-center gap-2">
@@ -269,10 +275,10 @@ export default function Dashboard() {
                     onChange={(e) => setSelectedGate(e.target.value)}
                     className="px-4 py-2 bg-white border rounded-lg text-sm font-medium text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
                   >
-                    <option value="">Semua Gerbang</option>
-                    {stats.bookings_by_gate.map((gate) => (
-                      <option key={gate.gate} value={gate.gate}>
-                        {gate.gate}
+                    <option value="">Semua Pintu Masuk</option>
+                    {gatesResponse?.data?.map((gate) => (
+                      <option key={gate.id_gate} value={gate.name}>
+                        {gate.name}
                       </option>
                     ))}
                   </select>
@@ -311,28 +317,28 @@ export default function Dashboard() {
                 <AreaChart data={revenueChartData}>
                   <defs>
                     <linearGradient id="colorOnline" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.8}/>
-                      <stop offset="95%" stopColor="#3b82f6" stopOpacity={0.1}/>
+                      <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.8} />
+                      <stop offset="95%" stopColor="#3b82f6" stopOpacity={0.1} />
                     </linearGradient>
                     <linearGradient id="colorOffline" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#10b981" stopOpacity={0.8}/>
-                      <stop offset="95%" stopColor="#10b981" stopOpacity={0.1}/>
+                      <stop offset="5%" stopColor="#10b981" stopOpacity={0.8} />
+                      <stop offset="95%" stopColor="#10b981" stopOpacity={0.1} />
                     </linearGradient>
                   </defs>
                   <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-                  <XAxis 
-                    dataKey="date" 
-                    stroke="#6b7280" 
+                  <XAxis
+                    dataKey="date"
+                    stroke="#6b7280"
                     fontSize={12}
                     tickLine={false}
                   />
-                  <YAxis 
-                    stroke="#6b7280" 
+                  <YAxis
+                    stroke="#6b7280"
                     fontSize={12}
                     tickLine={false}
                     tickFormatter={(value) => formatCompactPrice(value)}
                   />
-                  <Tooltip 
+                  <Tooltip
                     content={({ active, payload }) => {
                       if (active && payload && payload.length) {
                         return (
@@ -346,11 +352,11 @@ export default function Dashboard() {
                               </div>
                               <div className="flex items-center gap-2">
                                 <div className="w-3 h-3 rounded-full bg-green-500" />
-                                <span className="text-xs text-gray-600">On-Site:</span>
+                                <span className="text-xs text-gray-600">On-Site (Loket):</span>
                                 <span className="text-xs font-semibold text-gray-900">{formatPrice(payload[1].value as number)}</span>
                               </div>
                               <div className="pt-1 mt-1 border-t">
-                                <span className="text-xs text-gray-600">Total:</span>
+                                <span className="text-xs text-gray-600">Total Pendapatan:</span>
                                 <span className="text-xs font-bold text-gray-900 ml-2">{formatPrice(payload[0].payload.total)}</span>
                               </div>
                             </div>
@@ -360,23 +366,23 @@ export default function Dashboard() {
                       return null
                     }}
                   />
-                  <Area 
-                    type="monotone" 
-                    dataKey="online" 
-                    stroke="#3b82f6" 
+                  <Area
+                    type="monotone"
+                    dataKey="online"
+                    stroke="#3b82f6"
                     strokeWidth={2}
-                    fill="url(#colorOnline)" 
+                    fill="url(#colorOnline)"
                   />
-                  <Area 
-                    type="monotone" 
-                    dataKey="offline" 
-                    stroke="#10b981" 
+                  <Area
+                    type="monotone"
+                    dataKey="offline"
+                    stroke="#10b981"
                     strokeWidth={2}
-                    fill="url(#colorOffline)" 
+                    fill="url(#colorOffline)"
                   />
                 </AreaChart>
               </ResponsiveContainer>
-              
+
               {/* Revenue Summary */}
               <div className="grid grid-cols-3 gap-4 mt-6 pt-4 border-t">
                 <div className="bg-blue-50 rounded-lg p-4">
@@ -401,164 +407,13 @@ export default function Dashboard() {
             </CardContent>
           </Card>
 
-          {/* Revenue by Gate Bar Chart - Only show when no gate is selected */}
+          {/* Gate Statistics - Combined: Bookings and Revenue */}
           {!selectedGate && (
-            <Card>
-              <CardHeader>
-                <CardTitle>Pendapatan per Gerbang</CardTitle>
-                <CardDescription>Total pendapatan dari setiap gerbang masuk</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <ResponsiveContainer width="100%" height={300}>
-                  <BarChart data={stats.bookings_by_gate}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-                    <XAxis 
-                      dataKey="gate" 
-                      stroke="#6b7280" 
-                      fontSize={12}
-                      tickLine={false}
-                    />
-                    <YAxis 
-                      stroke="#6b7280" 
-                      fontSize={12}
-                      tickLine={false}
-                      tickFormatter={(value) => formatCompactPrice(value)}
-                    />
-                    <Tooltip 
-                      content={({ active, payload }) => {
-                        if (active && payload && payload.length) {
-                          return (
-                            <div className="bg-white p-3 rounded-lg border shadow-lg">
-                              <p className="text-sm font-medium text-gray-900 mb-2">{payload[0].payload.gate}</p>
-                              <div className="space-y-1">
-                                <p className="text-xs text-gray-600">
-                                  Booking: <span className="font-semibold text-gray-900">{payload[0].payload.count}</span>
-                                </p>
-                                <p className="text-xs text-gray-600">
-                                  Revenue: <span className="font-semibold text-green-600">{formatPrice(payload[0].value as number)}</span>
-                                </p>
-                              </div>
-                            </div>
-                          )
-                        }
-                        return null
-                      }}
-                    />
-                    <Bar dataKey="revenue" fill="#10b981" radius={[8, 8, 0, 0]} />
-                  </BarChart>
-                </ResponsiveContainer>
-              </CardContent>
-            </Card>
-          )}
-
-          {/* Divider */}
-          <div className="relative">
-            <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t-2 border-gray-200"></div>
-            </div>
-            <div className="relative flex justify-center">
-              <span className="bg-gray-50 px-4 text-sm font-medium text-gray-500">Statistik Tiket</span>
-            </div>
-          </div>
-
-          {/* Ticket Statistics - Combined */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Statistik Tiket Terjual</CardTitle>
-              <CardDescription>Distribusi tiket berdasarkan kategori visitor dan tipe hari</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 divide-x divide-gray-200">
-                {/* Kategori Visitor */}
-                <div className="pr-4">
-                  <h3 className="text-sm font-semibold text-gray-700 mb-4">Kategori Visitor</h3>
-                  <ResponsiveContainer width="100%" height={200}>
-                    <PieChart>
-                      <Pie
-                        data={[
-                          { name: 'Lokal', value: stats.tickets.by_category.lokal },
-                          { name: 'Mancanegara', value: stats.tickets.by_category.mancanegara }
-                        ]}
-                        cx="50%"
-                        cy="50%"
-                        labelLine={false}
-                        label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-                        outerRadius={70}
-                        fill="#8884d8"
-                        dataKey="value"
-                      >
-                        <Cell fill="#3b82f6" />
-                        <Cell fill="#f59e0b" />
-                      </Pie>
-                      <Tooltip />
-                    </PieChart>
-                  </ResponsiveContainer>
-                  <div className="grid grid-cols-2 gap-4 mt-4">
-                    <div className="flex items-center gap-2">
-                      <div className="w-3 h-3 rounded-full bg-blue-500" />
-                      <span className="text-sm text-gray-600">Lokal: <span className="font-semibold">{stats.tickets.by_category.lokal}</span></span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <div className="w-3 h-3 rounded-full bg-orange-500" />
-                      <span className="text-sm text-gray-600">Mancanegara: <span className="font-semibold">{stats.tickets.by_category.mancanegara}</span></span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Tipe Hari */}
-                <div className="pl-4">
-                  <h3 className="text-sm font-semibold text-gray-700 mb-4">Tipe Hari</h3>
-                  <ResponsiveContainer width="100%" height={200}>
-                    <PieChart>
-                      <Pie
-                        data={[
-                          { name: 'Weekday', value: stats.tickets.by_day_type.weekday },
-                          { name: 'Weekend', value: stats.tickets.by_day_type.weekend }
-                        ]}
-                        cx="50%"
-                        cy="50%"
-                        labelLine={false}
-                        label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-                        outerRadius={70}
-                        fill="#8884d8"
-                        dataKey="value"
-                      >
-                        <Cell fill="#8b5cf6" />
-                        <Cell fill="#ec4899" />
-                      </Pie>
-                      <Tooltip />
-                    </PieChart>
-                  </ResponsiveContainer>
-                  <div className="grid grid-cols-2 gap-4 mt-4">
-                    <div className="flex items-center gap-2">
-                      <div className="w-3 h-3 rounded-full bg-purple-500" />
-                      <span className="text-sm text-gray-600">Weekday: <span className="font-semibold">{stats.tickets.by_day_type.weekday}</span></span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <div className="w-3 h-3 rounded-full bg-pink-500" />
-                      <span className="text-sm text-gray-600">Weekend: <span className="font-semibold">{stats.tickets.by_day_type.weekend}</span></span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Total Tiket - Single Display */}
-              <div className="mt-6 pt-6 border-t">
-                <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg p-4 text-center">
-                  <p className="text-sm text-gray-600 font-medium">Total Tiket Terjual</p>
-                  <p className="text-3xl font-bold text-gray-900 mt-1">{stats.tickets.total}</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Bottom Section: Gate Chart + Recent Bookings */}
-          <div className={`grid grid-cols-1 gap-6 ${!selectedGate ? 'lg:grid-cols-3' : ''}`}>
-            {/* Bookings by Gate Pie Chart - Only show when no gate is selected */}
-            {!selectedGate && (
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* Bookings by Gate Pie Chart */}
               <Card>
                 <CardHeader>
-                  <CardTitle>Booking per Gerbang</CardTitle>
+                  <CardTitle>Pemesanan per Pintu Masuk</CardTitle>
                   <CardDescription>Distribusi per gerbang masuk</CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -570,6 +425,7 @@ export default function Dashboard() {
                         cy="50%"
                         labelLine={false}
                         outerRadius={70}
+                        label={({ percent }) => `${(percent * 100).toFixed(0)}%`}
                         fill="#8884d8"
                         dataKey="value"
                       >
@@ -577,13 +433,13 @@ export default function Dashboard() {
                           <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                         ))}
                       </Pie>
-                      <Tooltip 
+                      <Tooltip
                         content={({ active, payload }) => {
                           if (active && payload && payload.length) {
                             return (
                               <div className="bg-white p-2 rounded-lg border shadow-lg">
                                 <p className="text-sm font-medium text-gray-900">{payload[0].name}</p>
-                                <p className="text-xs text-gray-600">{payload[0].value} booking</p>
+                                <p className="text-xs text-gray-600">{payload[0].value} Tiket</p>
                               </div>
                             )
                           }
@@ -605,60 +461,247 @@ export default function Dashboard() {
                   </div>
                 </CardContent>
               </Card>
-            )}
 
-            {/* Recent Bookings */}
-            <Card className={!selectedGate ? 'lg:col-span-2' : ''}>
-              <CardHeader>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <CardTitle>Booking Terbaru</CardTitle>
-                    <CardDescription>5 transaksi terakhir</CardDescription>
-                  </div>
-                  <Link href="/bookings">
-                    <Button variant="outline" size="sm">
-                      Lihat Semua
-                    </Button>
-                  </Link>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
-                  {stats.recent_bookings.length === 0 ? (
-                    <p className="text-center py-8 text-gray-500">Belum ada booking</p>
-                  ) : (
-                    stats.recent_bookings.map((booking) => (
-                      <div key={booking.id_booking} className="flex items-center justify-between p-4 bg-gradient-to-r from-gray-50 to-white rounded-lg border hover:shadow-md transition-shadow">
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2">
-                            <p className="font-semibold text-gray-900">{booking.leader_name}</p>
-                            <Badge className={booking.source === 'online' ? 'bg-blue-100 text-blue-800 border-blue-200' : 'bg-green-100 text-green-800 border-green-200'}>
-                              {booking.source === 'online' ? 'Online' : 'On-Site'}
-                            </Badge>
-                          </div>
-                          <p className="text-xs text-gray-500 mt-1">
-                            {new Date(booking.created_on).toLocaleDateString('id-ID', {
-                              year: 'numeric',
-                              month: 'short',
-                              day: 'numeric',
-                              hour: '2-digit',
-                              minute: '2-digit'
-                            })}
-                          </p>
-                        </div>
-                        <div className="flex items-center gap-3">
-                          <p className="font-bold text-lg text-gray-900">
-                            {formatPrice(booking.total_amount)}
-                          </p>
-                          {getStatusBadge(booking.status)}
-                        </div>
-                      </div>
-                    ))
-                  )}
-                </div>
-              </CardContent>
-            </Card>
+              {/* Revenue by Gate Bar Chart */}
+              <Card>
+                <CardHeader>
+                  <CardTitle>Pendapatan per Gerbang</CardTitle>
+                  <CardDescription>Total pendapatan dari setiap gerbang masuk</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <ResponsiveContainer width="100%" height={300}>
+                    <BarChart data={stats.bookings_by_gate}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                      <XAxis
+                        dataKey="gate"
+                        stroke="#6b7280"
+                        fontSize={12}
+                        tickLine={false}
+                      />
+                      <YAxis
+                        stroke="#6b7280"
+                        fontSize={12}
+                        tickLine={false}
+                        tickFormatter={(value) => formatCompactPrice(value)}
+                      />
+                      <Tooltip
+                        content={({ active, payload }) => {
+                          if (active && payload && payload.length) {
+                            return (
+                              <div className="bg-white p-3 rounded-lg border shadow-lg">
+                                <p className="text-sm font-medium text-gray-900 mb-2">{payload[0].payload.gate}</p>
+                                <div className="space-y-1">
+                                  <p className="text-xs text-gray-600">
+                                    Pemesan: <span className="font-semibold text-gray-900">{payload[0].payload.count}</span>
+                                  </p>
+                                  <p className="text-xs text-gray-600">
+                                    Pendapatan: <span className="font-semibold text-green-600">{formatPrice(payload[0].value as number)}</span>
+                                  </p>
+                                </div>
+                              </div>
+                            )
+                          }
+                          return null
+                        }}
+                      />
+                      <Bar dataKey="revenue" fill="#10b981" radius={[8, 8, 0, 0]} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </CardContent>
+              </Card>
+            </div>
+          )}
+
+          {/* Divider */}
+          <div className="relative">
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full border-t-2 border-gray-200"></div>
+            </div>
+            <div className="relative flex justify-center">
+              <span className="bg-gray-50 px-4 text-sm font-medium text-gray-500">Statistik Tiket</span>
+            </div>
           </div>
+
+          {/* Ticket Statistics - Combined */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Statistik Penjualan Tiket</CardTitle>
+              <CardDescription>Distribusi tiket berdasarkan Asal Pengunjung dan Jenis Hari Kunjungan</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 divide-x divide-gray-200">
+                {/* Kategori Visitor */}
+                <div className="pr-4">
+                  <h3 className="text-sm font-semibold text-gray-700 mb-4">Asal Pengunjung</h3>
+                  <ResponsiveContainer width="100%" height={200}>
+                    <PieChart>
+                      <Pie
+                        data={[
+                          { name: 'Lokal (Domestik)', value: stats.tickets.by_category.lokal },
+                          { name: 'Mancanegara (Wisatawan Asing)', value: stats.tickets.by_category.mancanegara }
+                        ]}
+                        cx="50%"
+                        cy="50%"
+                        labelLine={false}
+                        label={({ percent }) => `${(percent * 100).toFixed(0)}%`}
+                        outerRadius={70}
+                        fill="#8884d8"
+                        dataKey="value"
+                      >
+                        <Cell fill="#3b82f6" />
+                        <Cell fill="#f59e0b" />
+                      </Pie>
+                      <Tooltip
+                        content={({ active, payload }) => {
+                          if (active && payload && payload.length) {
+                            const data = payload[0];
+                            const percent = ((data.value as number) / stats.tickets.total * 100).toFixed(1);
+                            return (
+                              <div className="bg-white p-3 rounded-lg border shadow-lg">
+                                <p className="text-sm font-medium text-gray-900">{data.name}</p>
+                                <p className="text-xs text-gray-600 mt-1">
+                                  Jumlah: <span className="font-semibold text-gray-900">{data.value} tiket</span>
+                                </p>
+                                <p className="text-xs text-gray-600">
+                                  Persentase: <span className="font-semibold text-gray-900">{percent}%</span>
+                                </p>
+                              </div>
+                            )
+                          }
+                          return null
+                        }}
+                      />
+                    </PieChart>
+                  </ResponsiveContainer>
+                  <div className="flex gap-4 mt-4 items-center justify-center">
+                    <div className="flex items-center gap-2">
+                      <div className="w-3 h-3 rounded-full bg-blue-500" />
+                      <span className="text-sm text-gray-600">Lokal (Domestik): <span className="font-semibold">{stats.tickets.by_category.lokal}</span></span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <div className="w-3 h-3 rounded-full bg-orange-500" />
+                      <span className="text-sm text-gray-600">Mancanegara (Wisatawan Asing): <span className="font-semibold">{stats.tickets.by_category.mancanegara}</span></span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Jenis Hari Kunjungan */}
+                <div className="pl-4">
+                  <h3 className="text-sm font-semibold text-gray-700 mb-4">Jenis Hari Kunjungan</h3>
+                  <ResponsiveContainer width="100%" height={200}>
+                    <PieChart>
+                      <Pie
+                        data={[
+                          { name: 'Hari Biasa', value: stats.tickets.by_day_type.weekday },
+                          { name: 'Hari Libur', value: stats.tickets.by_day_type.weekend }
+                        ]}
+                        cx="50%"
+                        cy="50%"
+                        labelLine={false}
+                        label={({ percent }) => `${(percent * 100).toFixed(0)}%`}
+                        outerRadius={70}
+                        fill="#8884d8"
+                        dataKey="value"
+                      >
+                        <Cell fill="#8b5cf6" />
+                        <Cell fill="#ec4899" />
+                      </Pie>
+                      <Tooltip
+                        content={({ active, payload }) => {
+                          if (active && payload && payload.length) {
+                            const data = payload[0];
+                            const percent = ((data.value as number) / stats.tickets.total * 100).toFixed(1);
+                            return (
+                              <div className="bg-white p-3 rounded-lg border shadow-lg">
+                                <p className="text-sm font-medium text-gray-900">{data.name}</p>
+                                <p className="text-xs text-gray-600 mt-1">
+                                  Jumlah: <span className="font-semibold text-gray-900">{data.value} tiket</span>
+                                </p>
+                                <p className="text-xs text-gray-600">
+                                  Persentase: <span className="font-semibold text-gray-900">{percent}%</span>
+                                </p>
+                              </div>
+                            )
+                          }
+                          return null
+                        }}
+                      />
+                    </PieChart>
+                  </ResponsiveContainer>
+                  <div className="flex gap-4 mt-4 items-center justify-center">
+                    <div className="flex items-center gap-2">
+                      <div className="w-3 h-3 rounded-full bg-purple-500" />
+                      <span className="text-sm text-gray-600">Hari Biasa: <span className="font-semibold">{stats.tickets.by_day_type.weekday}</span></span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <div className="w-3 h-3 rounded-full bg-pink-500" />
+                      <span className="text-sm text-gray-600">Hari Libur: <span className="font-semibold">{stats.tickets.by_day_type.weekend}</span></span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Total Tiket - Single Display */}
+              <div className="mt-6 pt-6 border-t">
+                <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg p-4 text-center">
+                  <p className="text-sm text-gray-600 font-medium">Total Tiket Terjual</p>
+                  <p className="text-3xl font-bold text-gray-900 mt-1">{stats.tickets.total}</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Recent Bookings */}
+          <Card>
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle>Pemesanan Terbaru</CardTitle>
+                  <CardDescription>5 Pemesanan Terbaru</CardDescription>
+                </div>
+                <Link href="/bookings">
+                  <Button variant="outline" size="sm">
+                    Lihat Semua
+                  </Button>
+                </Link>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3">
+                {stats.recent_bookings.length === 0 ? (
+                  <p className="text-center py-8 text-gray-500">Belum ada booking</p>
+                ) : (
+                  stats.recent_bookings.map((booking) => (
+                    <div key={booking.id_booking} className="flex items-center justify-between p-4 bg-gradient-to-r from-gray-50 to-white rounded-lg border hover:shadow-md transition-shadow">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2">
+                          <p className="font-semibold text-gray-900">{booking.leader_name}</p>
+                          <Badge className={booking.source === 'online' ? 'bg-blue-100 text-blue-800 border-blue-200' : 'bg-green-100 text-green-800 border-green-200'}>
+                            {booking.source === 'online' ? 'Online' : 'On-Site'}
+                          </Badge>
+                        </div>
+                        <p className="text-xs text-gray-500 mt-1">
+                          {new Date(booking.created_on).toLocaleDateString('id-ID', {
+                            year: 'numeric',
+                            month: 'short',
+                            day: 'numeric',
+                            hour: '2-digit',
+                            minute: '2-digit'
+                          })}
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <p className="font-bold text-lg text-gray-900">
+                          {formatPrice(booking.total_amount)}
+                        </p>
+                        {getStatusBadge(booking.status)}
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            </CardContent>
+          </Card>
         </>
       )}
     </div>

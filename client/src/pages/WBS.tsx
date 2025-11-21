@@ -1,6 +1,12 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { whistleblowingApi, type Whistleblowing } from "@/lib/api";
+
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api';
+const getImageUrl = (path: string) => {
+    if (path.startsWith('http')) return path;
+    return `${API_BASE_URL.replace('/api', '')}${path}`;
+};
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -48,6 +54,7 @@ export default function WBS() {
     const [page, setPage] = useState(1);
     const [internalNotes, setInternalNotes] = useState("");
     const [newStatus, setNewStatus] = useState("");
+    const [previewImage, setPreviewImage] = useState<string | null>(null);
 
     const { data: reportsResponse, isLoading } = useQuery({
         queryKey: ["whistleblowing", page, statusFilter, priorityFilter],
@@ -519,20 +526,43 @@ export default function WBS() {
                                             <h3 className="font-semibold text-sm">File Lampiran</h3>
                                         </CardHeader>
                                         <CardContent>
-                                            <div className="space-y-2">
-                                                {selectedReport.files.map((file, index) => (
-                                                    <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                                                        <div className="flex items-center gap-2">
-                                                            <FileText className="h-4 w-4 text-gray-500" />
-                                                            <span className="text-sm text-gray-700">{file.split('/').pop()}</span>
+                                            <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                                                {selectedReport.files.map((file, index) => {
+                                                    const isImage = /\.(jpg|jpeg|png|gif|webp)$/i.test(file);
+                                                    const fileUrl = getImageUrl(file);
+                                                    return (
+                                                        <div key={index} className="relative group">
+                                                            {isImage ? (
+                                                                <div 
+                                                                    className="aspect-square rounded-lg overflow-hidden bg-gray-100 cursor-pointer hover:opacity-90 transition-opacity"
+                                                                    onClick={() => setPreviewImage(fileUrl)}
+                                                                >
+                                                                    <img 
+                                                                        src={fileUrl} 
+                                                                        alt={`Evidence ${index + 1}`}
+                                                                        className="w-full h-full object-cover"
+                                                                    />
+                                                                    <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 transition-all flex items-center justify-center">
+                                                                        <Eye className="h-6 w-6 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
+                                                                    </div>
+                                                                </div>
+                                                            ) : (
+                                                                <div className="aspect-square rounded-lg bg-gray-50 border-2 border-dashed border-gray-300 flex flex-col items-center justify-center p-4">
+                                                                    <FileText className="h-8 w-8 text-gray-400 mb-2" />
+                                                                    <span className="text-xs text-gray-600 text-center truncate w-full">
+                                                                        {file.split('/').pop()}
+                                                                    </span>
+                                                                    <Button variant="ghost" size="sm" className="mt-2" asChild>
+                                                                        <a href={fileUrl} target="_blank" rel="noopener noreferrer">
+                                                                            <Download className="h-3 w-3 mr-1" />
+                                                                            Download
+                                                                        </a>
+                                                                    </Button>
+                                                                </div>
+                                                            )}
                                                         </div>
-                                                        <Button variant="ghost" size="sm" asChild>
-                                                            <a href={file} target="_blank" rel="noopener noreferrer">
-                                                                <Download className="h-4 w-4" />
-                                                            </a>
-                                                        </Button>
-                                                    </div>
-                                                ))}
+                                                    );
+                                                })}
                                             </div>
                                         </CardContent>
                                     </Card>
@@ -587,6 +617,35 @@ export default function WBS() {
                             {updateStatusMutation.isPending ? "Menyimpan..." : "Simpan"}
                         </Button>
                     </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            {/* Image Preview Dialog */}
+            <Dialog open={!!previewImage} onOpenChange={() => setPreviewImage(null)}>
+                <DialogContent className="max-w-4xl">
+                    <DialogHeader>
+                        <DialogTitle>Preview Gambar</DialogTitle>
+                    </DialogHeader>
+                    {previewImage && (
+                        <div className="relative">
+                            <img 
+                                src={previewImage} 
+                                alt="Preview" 
+                                className="w-full h-auto max-h-[70vh] object-contain rounded-lg"
+                            />
+                            <Button 
+                                variant="outline" 
+                                size="sm" 
+                                className="absolute top-2 right-2"
+                                asChild
+                            >
+                                <a href={previewImage} target="_blank" rel="noopener noreferrer">
+                                    <Download className="h-4 w-4 mr-2" />
+                                    Download
+                                </a>
+                            </Button>
+                        </div>
+                    )}
                 </DialogContent>
             </Dialog>
         </div>
