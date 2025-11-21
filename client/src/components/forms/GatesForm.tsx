@@ -100,7 +100,8 @@ export function GateForm({ open, onOpenChange, gate }: GateFormProps) {
     formData.append("name", values.name);
     if (values.description) formData.append("description", values.description);
     formData.append("location", values.location);
-    formData.append("is_active", String(values.is_active));
+    // Send as "1" or "0" for boolean compatibility
+    formData.append("is_active", values.is_active ? "1" : "0");
     if (values.image && values.image.length > 0) {
       formData.append("image", values.image[0]);
     }
