@@ -157,7 +157,7 @@ export default function Bookings() {
                 <div>
                   <p className="text-sm font-medium text-gray-500">Total Booking</p>
                   <p className="text-2xl font-semibold text-gray-900 mt-1">
-                    {analytics.total_bookings}
+                    {analytics?.total_bookings || 0}
                   </p>
                 </div>
                 <div className="h-12 w-12 bg-blue-100 rounded-lg flex items-center justify-center">
@@ -173,7 +173,7 @@ export default function Bookings() {
                 <div>
                   <p className="text-sm font-medium text-gray-500">Total Pendapatan</p>
                   <p className="text-2xl font-semibold text-gray-900 mt-1">
-                    {formatPrice(analytics.total_revenue)}
+                    {formatPrice(analytics?.total_revenue || 0)}
                   </p>
                 </div>
                 <div className="h-12 w-12 bg-green-100 rounded-lg flex items-center justify-center">
@@ -189,7 +189,7 @@ export default function Bookings() {
                 <div>
                   <p className="text-sm font-medium text-gray-500">Booking Online</p>
                   <p className="text-2xl font-semibold text-gray-900 mt-1">
-                    {analytics.by_source.online}
+                    {analytics?.by_source?.online || 0}
                   </p>
                 </div>
                 <div className="h-12 w-12 bg-purple-100 rounded-lg flex items-center justify-center">
@@ -205,7 +205,7 @@ export default function Bookings() {
                 <div>
                   <p className="text-sm font-medium text-gray-500">Booking On-Site</p>
                   <p className="text-2xl font-semibold text-gray-900 mt-1">
-                    {analytics.by_source.offline}
+                    {analytics?.by_source?.offline || 0}
                   </p>
                 </div>
                 <div className="h-12 w-12 bg-orange-100 rounded-lg flex items-center justify-center">
