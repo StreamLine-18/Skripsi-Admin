@@ -31,7 +31,7 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { destinationApi, gateApi } from "@/lib/api";
 import type { Destination, Gate } from "@/lib/api";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { RichTextEditor } from "@/components/ui/RichTextEditor";
 import { ScrollArea } from "../ui/scroll-area";
 import { getImageUrl } from "@/lib/imageUtils";
@@ -44,7 +44,7 @@ const formSchema = z.object({
   description: z.string().optional(),
   features: z.string().optional(),
   facilities: z.string().optional(),
-  status: z.enum(["draft", "published"]).default("draft"),
+  status: z.enum(["Draft", "Published"]).default("Draft"),
   image: z.instanceof(FileList).optional(),
 });
 
@@ -59,6 +59,7 @@ export function DestinationForm({ open, onOpenChange, destinationItem }: Destina
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const isEditing = !!destinationItem;
+  const [previewImage, setPreviewImage] = useState<string | null>(null);
 
   const { data: gatesResponse } = useQuery({ 
     queryKey: ["gates", "all"], 
@@ -76,7 +77,7 @@ export function DestinationForm({ open, onOpenChange, destinationItem }: Destina
       description: "",
       features: "",
       facilities: "",
-      status: "draft",
+      status: "Draft",
     },
   });
 
@@ -105,8 +106,9 @@ export function DestinationForm({ open, onOpenChange, destinationItem }: Destina
         description: destinationItem.description,
         features: destinationItem.features,
         facilities: destinationItem.facilities,
-        status: (destinationItem.status as "draft" | "published") || "draft",
+        status: (destinationItem.status as "Draft" | "Published") || "Draft",
       });
+      setPreviewImage(null); // Reset preview when editing
     } else {
       form.reset({
         name: "",
@@ -115,8 +117,9 @@ export function DestinationForm({ open, onOpenChange, destinationItem }: Destina
         description: "",
         features: "",
         facilities: "",
-        status: "draft",
+        status: "Draft",
       });
+      setPreviewImage(null); // Reset preview when creating new
     }
   }, [destinationItem, form, open]);
 
@@ -155,6 +158,20 @@ export function DestinationForm({ open, onOpenChange, destinationItem }: Destina
     if (values.image && values.image.length > 0) {
       formData.append("image", values.image[0]);
     }
+    
+    // Log the payload
+    console.log("=== Destination Form Payload ===");
+    console.log("Form Values:", values);
+    console.log("FormData entries:");
+    Array.from(formData.entries()).forEach(([key, value]) => {
+      if (value instanceof File) {
+        console.log(`${key}:`, `File(${value.name}, ${value.size} bytes, ${value.type})`);
+      } else {
+        console.log(`${key}:`, value);
+      }
+    });
+    console.log("================================");
+    
     mutation.mutate(formData);
   };
 
@@ -187,7 +204,7 @@ export function DestinationForm({ open, onOpenChange, destinationItem }: Destina
                       )} />
                       
                       <FormField name="status" control={form.control} render={({ field }) => (
-                        <FormItem><FormLabel>Status</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Select status" /></SelectTrigger></FormControl><SelectContent><SelectItem value="draft">Draft</SelectItem><SelectItem value="published">Published</SelectItem></SelectContent></Select><FormMessage /></FormItem>
+                        <FormItem><FormLabel>Status</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Select status" /></SelectTrigger></FormControl><SelectContent><SelectItem value="Draft">Draft</SelectItem><SelectItem value="Published">Published</SelectItem></SelectContent></Select><FormMessage /></FormItem>
                       )} />
                     </div>
                     
@@ -233,12 +250,56 @@ export function DestinationForm({ open, onOpenChange, destinationItem }: Destina
                      )} />
 
                     <FormField name="image" control={form.control} render={({ field }) => (
-                        <FormItem><FormLabel>Image</FormLabel><FormControl><Input type="file" accept="image/*" onChange={(e) => field.onChange(e.target.files)} /></FormControl><FormMessage /></FormItem>
+                        <FormItem>
+                          <FormLabel>Image</FormLabel>
+                          <FormControl>
+                            <Input 
+                              type="file" 
+                              accept="image/*" 
+                              onChange={(e) => {
+                                field.onChange(e.target.files);
+                                // Create preview for new image
+                                if (e.target.files && e.target.files[0]) {
+                                  const reader = new FileReader();
+                                  reader.onloadend = () => {
+                                    setPreviewImage(reader.result as string);
+                                  };
+                                  reader.readAsDataURL(e.target.files[0]);
+                                } else {
+                                  setPreviewImage(null);
+                                }
+                              }} 
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
                     )} />
+                    
+                    {/* Current Image (when editing) */}
                     {isEditing && destinationItem?.image_url && (
                         <div className="text-sm">
                             <p className="font-medium">Current Image:</p>
-                            <img src={imageUrl} alt={destinationItem.name} className="mt-2 rounded-md max-h-40" />
+                            <img 
+                              src={imageUrl} 
+                              alt={destinationItem.name} 
+                              className="mt-2 rounded-md max-h-40 border" 
+                              onError={(e) => {
+                                console.error("Image failed to load:", imageUrl);
+                                e.currentTarget.src = "https://placehold.co/600x400/EEE/31343C?text=Image+Not+Found";
+                              }}
+                            />
+                        </div>
+                    )}
+                    
+                    {/* New Image Preview */}
+                    {previewImage && (
+                        <div className="text-sm">
+                            <p className="font-medium text-green-600">New Image Preview:</p>
+                            <img 
+                              src={previewImage} 
+                              alt="Preview" 
+                              className="mt-2 rounded-md max-h-40 border border-green-500" 
+                            />
                         </div>
                     )}
                 </div>
