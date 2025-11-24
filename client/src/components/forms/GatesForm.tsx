@@ -26,6 +26,7 @@ import { gateApi, type Gate } from "@/lib/api";
 import { useEffect } from "react";
 import { ScrollArea } from "../ui/scroll-area";
 import { RichTextEditor } from "../ui/RichTextEditor"; // <-- 1. Import RichTextEditor
+import { getImageUrl } from "@/lib/imageUtils";
 
 // --- Form Schema ---
 const formSchema = z.object({
@@ -47,12 +48,7 @@ export function GateForm({ open, onOpenChange, gate }: GateFormProps) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const isEditing = !!gate;
-
-  const serverBaseUrl = import.meta.env.VITE_API_BASE_URL.replace('/api', '');
-
-  const imageUrl = gate?.image_url
-    ? `${serverBaseUrl}${gate.image_url.replace('/public', '')}`
-    : '';
+  const imageUrl = getImageUrl(gate?.image_url);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),

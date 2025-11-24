@@ -33,6 +33,7 @@ import type { News } from "@/lib/api";
 import { useEffect } from "react";
 import { RichTextEditor } from "@/components/ui/RichTextEditor";
 import { ScrollArea } from "../ui/scroll-area";
+import { getImageUrl } from "@/lib/imageUtils";
 
 // --- Form Schema ---
 const formSchema = z.object({
@@ -53,16 +54,7 @@ export function NewsForm({ open, onOpenChange, newsItem }: NewsFormProps) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const isEditing = !!newsItem;
-
-  // --- PERBAIKAN DI SINI ---
-  // 1. Ambil URL dasar server dari environment variable Vite.
-  const serverBaseUrl = import.meta.env.VITE_API_BASE_URL.replace('/api', '');
-
-  // 2. Buat URL gambar yang lengkap dan benar.
-  const imageUrl = newsItem?.image_url 
-    ? `${serverBaseUrl}/${newsItem.image_url.replace('/public', '')}` 
-    : '';
-  // --- AKHIR PERBAIKAN ---
+  const imageUrl = getImageUrl(newsItem?.image_url);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),

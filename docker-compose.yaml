@@ -1,17 +1,14 @@
 version: "3.8"
-name: neo-fipex-cms
-networks:
-  default:
-    driver: bridge
+
 services:
-  app:
+  admin:
+    container_name: skripsi_admin
     build:
       context: .
-      dockerfile: .docker/Dockerfile
-      target: production
-    image: ${IMAGE_NAME:-neo-fipex-cms:latest}
+      args:
+        VITE_API_BASE_URL: https://api.strmlns.app/api
+    restart: always
+    env_file:
+      - .env
     ports:
-      - "8080:80"
-    container_name: neo-fipex-cms
-    networks:
-      - default
+      - "127.0.0.1:3100:80"  # internal only

@@ -65,10 +65,7 @@ export function DestinationForm({ open, onOpenChange, destinationItem }: Destina
   });
   const gates: Gate[] = gatesResponse?.data || [];
   // --- Akhir pengambilan data Gate ---
-    const SERVER_ROOT_URL = import.meta.env.VITE_API_BASE_URL.replace('/api', '');
-  const imageUrl = destinationItem?.image_url
-    ? `${SERVER_ROOT_URL}${destinationItem.image_url.replace('/public', '')}`
-    : '';
+  const imageUrl = getImageUrl(destinationItem?.image_url);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),

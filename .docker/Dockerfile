@@ -1,4 +1,4 @@
-# Dockerfile for nextjs with multistage
+# Multi-stage Dockerfile for Vite + React app
 ARG NODE_VERSION=23.10.0-alpine
 FROM node:$NODE_VERSION AS base
 WORKDIR /app

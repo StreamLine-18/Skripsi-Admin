@@ -29,10 +29,11 @@ import {
 } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { eventApi } from "@/lib/api";
-import type { Event as EventType } from "@/lib/api";
+import type { Event } from "@/lib/api";
 import { useEffect } from "react";
 import { RichTextEditor } from "@/components/ui/RichTextEditor";
 import { ScrollArea } from "../ui/scroll-area";
+import { getImageUrl } from "@/lib/imageUtils";
 
 // --- Form Schema ---
 const formSchema = z.object({
@@ -55,12 +56,7 @@ export function EventForm({ open, onOpenChange, eventItem }: EventFormProps) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const isEditing = !!eventItem;
-
-    const serverBaseUrl = import.meta.env.VITE_API_BASE_URL.replace('/api', '');
-
-  const imageUrl = eventItem?.image_url
-    ? `${serverBaseUrl}${eventItem.image_url.replace('/public', '')}`
-    : '';
+  const imageUrl = getImageUrl(eventItem?.image_url);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
