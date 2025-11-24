@@ -1,12 +1,7 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { whistleblowingApi, type Whistleblowing } from "@/lib/api";
-
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api';
-const getImageUrl = (path: string) => {
-    if (path.startsWith('http')) return path;
-    return `${API_BASE_URL.replace('/api', '')}${path}`;
-};
+import { getImageUrl } from "@/lib/imageUtils";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";

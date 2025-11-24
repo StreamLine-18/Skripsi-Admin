@@ -241,6 +241,7 @@ export interface Destination {
   image_url: string;
   features?: string;
   facilities?: string;
+  status?: string;
   created_on: string;
   updated_on: string;
   gate?: { // Untuk menampilkan nama gate di tabel

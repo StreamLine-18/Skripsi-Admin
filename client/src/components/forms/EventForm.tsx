@@ -49,7 +49,7 @@ const formSchema = z.object({
 interface EventFormProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  eventItem?: EventType;
+  eventItem?: Event;
 }
 
 export function EventForm({ open, onOpenChange, eventItem }: EventFormProps) {

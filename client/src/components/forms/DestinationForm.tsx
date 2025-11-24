@@ -4,7 +4,7 @@ import * as z from "zod";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea"; // Import Textarea jika diperlukan
+import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
   SelectContent,
@@ -29,11 +29,12 @@ import {
   DialogClose,
 } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
-import { destinationApi, gateApi } from "@/lib/api"; // <-- Impor destinationApi dan gateApi
-import type { Destination, Gate } from "@/lib/api"; // <-- Impor type Destination dan Gate
+import { destinationApi, gateApi } from "@/lib/api";
+import type { Destination, Gate } from "@/lib/api";
 import { useEffect } from "react";
 import { RichTextEditor } from "@/components/ui/RichTextEditor";
 import { ScrollArea } from "../ui/scroll-area";
+import { getImageUrl } from "@/lib/imageUtils";
 
 // --- Form Schema ---
 const formSchema = z.object({
@@ -43,6 +44,7 @@ const formSchema = z.object({
   description: z.string().optional(),
   features: z.string().optional(),
   facilities: z.string().optional(),
+  status: z.enum(["draft", "published"]).default("draft"),
   image: z.instanceof(FileList).optional(),
 });
 
@@ -50,22 +52,20 @@ const formSchema = z.object({
 interface DestinationFormProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  destinationItem?: Destination; // <-- Ganti nama prop
+  destinationItem?: Destination;
 }
 
-export function DestinationForm({ open, onOpenChange, destinationItem }: DestinationFormProps) { // <-- Ganti nama komponen dan prop
+export function DestinationForm({ open, onOpenChange, destinationItem }: DestinationFormProps) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const isEditing = !!destinationItem;
 
-  // --- Ambil data Gate untuk dropdown ---
   const { data: gatesResponse } = useQuery({ 
     queryKey: ["gates", "all"], 
-    queryFn: () => gateApi.getGates({ pageSize: 999, is_active: true }) // Ambil gate yang aktif saja
+    queryFn: () => gateApi.getGates({ pageSize: 999 })
   });
   const gates: Gate[] = gatesResponse?.data || [];
-  // --- Akhir pengambilan data Gate ---
-  const imageUrl = getImageUrl(destinationItem?.image_url);
+  const imageUrl = destinationItem?.image_url ? getImageUrl(destinationItem.image_url) : '';
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -76,27 +76,25 @@ export function DestinationForm({ open, onOpenChange, destinationItem }: Destina
       description: "",
       features: "",
       facilities: "",
+      status: "draft",
     },
   });
 
-  // Fungsi untuk membuat slug otomatis
   const generateSlug = (name: string) => {
     return name
       .toLowerCase()
-      .replace(/[^a-z0-9\s-]/g, '') // Hapus karakter non-alfanumerik kecuali spasi dan hyphen
+      .replace(/[^a-z0-9\s-]/g, '')
       .trim()
-      .replace(/\s+/g, '-') // Ganti spasi dengan hyphen
-      .replace(/-+/g, '-'); // Hapus hyphen berlebih
+      .replace(/\s+/g, '-')
+      .replace(/-+/g, '-');
   };
 
-  // Watch perubahan pada field 'name' untuk auto-generate slug
   const nameValue = form.watch('name');
   useEffect(() => {
-    if (!isEditing && nameValue) { // Hanya generate saat membuat baru
+    if (!isEditing && nameValue) {
       form.setValue('slug', generateSlug(nameValue), { shouldValidate: true });
     }
   }, [nameValue, form, isEditing]);
-
 
   useEffect(() => {
     if (destinationItem) {
@@ -107,6 +105,7 @@ export function DestinationForm({ open, onOpenChange, destinationItem }: Destina
         description: destinationItem.description,
         features: destinationItem.features,
         facilities: destinationItem.facilities,
+        status: (destinationItem.status as "draft" | "published") || "draft",
       });
     } else {
       form.reset({
@@ -116,6 +115,7 @@ export function DestinationForm({ open, onOpenChange, destinationItem }: Destina
         description: "",
         features: "",
         facilities: "",
+        status: "draft",
       });
     }
   }, [destinationItem, form, open]);
@@ -123,11 +123,11 @@ export function DestinationForm({ open, onOpenChange, destinationItem }: Destina
   const mutation = useMutation({
     mutationFn: (formData: FormData) => {
       return isEditing
-        ? destinationApi.updateDestination(destinationItem!.id_destination, formData) // <-- Ganti API call
-        : destinationApi.createDestination(formData); // <-- Ganti API call
+        ? destinationApi.updateDestination(destinationItem!.id_destination, formData)
+        : destinationApi.createDestination(formData);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["destinations"] }); // <-- Ganti queryKey
+      queryClient.invalidateQueries({ queryKey: ["destinations"] });
       toast({
         title: "Success",
         description: `Destination ${isEditing ? 'updated' : 'created'} successfully.`,
@@ -148,6 +148,7 @@ export function DestinationForm({ open, onOpenChange, destinationItem }: Destina
     formData.append("name", values.name);
     formData.append("slug", values.slug);
     formData.append("id_gate", values.id_gate);
+    formData.append("status", values.status);
     if (values.description) formData.append("description", values.description);
     if (values.features) formData.append("features", values.features);
     if (values.facilities) formData.append("facilities", values.facilities);
@@ -160,12 +161,12 @@ export function DestinationForm({ open, onOpenChange, destinationItem }: Destina
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
-        className="sm:max-w-4xl h-[90vh] flex flex-col" // Dialog besar
+        className="sm:max-w-4xl h-[90vh] flex flex-col"
         onPointerDownOutside={(e) => e.preventDefault()}
         onEscapeKeyDown={(e) => e.preventDefault()}
       >
         <DialogHeader>
-          <DialogTitle>{isEditing ? "Edit" : "Add New"} Destination</DialogTitle> {/* <-- Ganti judul */}
+          <DialogTitle>{isEditing ? "Edit" : "Add New"} Destination</DialogTitle>
         </DialogHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col flex-grow min-h-0">
@@ -180,16 +181,22 @@ export function DestinationForm({ open, onOpenChange, destinationItem }: Destina
                       )} />
                     </div>
 
-                    <FormField name="id_gate" control={form.control} render={({ field }) => (
-                      <FormItem><FormLabel>Associated Gate</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Select a gate" /></SelectTrigger></FormControl><SelectContent>{gates.map(gate => (<SelectItem key={gate.id_gate} value={gate.id_gate}>{gate.name}</SelectItem>))}</SelectContent></Select><FormMessage /></FormItem>
-                    )} />
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <FormField name="id_gate" control={form.control} render={({ field }) => (
+                        <FormItem><FormLabel>Associated Gate</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Select a gate" /></SelectTrigger></FormControl><SelectContent>{gates.map(gate => (<SelectItem key={gate.id_gate} value={gate.id_gate}>{gate.name}</SelectItem>))}</SelectContent></Select><FormMessage /></FormItem>
+                      )} />
+                      
+                      <FormField name="status" control={form.control} render={({ field }) => (
+                        <FormItem><FormLabel>Status</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Select status" /></SelectTrigger></FormControl><SelectContent><SelectItem value="draft">Draft</SelectItem><SelectItem value="published">Published</SelectItem></SelectContent></Select><FormMessage /></FormItem>
+                      )} />
+                    </div>
                     
                     <FormField name="description" control={form.control} render={({ field }) => (
                       <FormItem>
                         <FormLabel>Description</FormLabel>
                         <FormControl>
                             <RichTextEditor 
-                                className="h-60 mb-12" // Sesuaikan tinggi jika perlu
+                                className="h-60 mb-12"
                                 value={field.value || ''} 
                                 onChange={field.onChange} 
                                 placeholder="Describe the destination..." 
@@ -199,7 +206,6 @@ export function DestinationForm({ open, onOpenChange, destinationItem }: Destina
                       </FormItem>
                     )} />
 
-                    {/* Menggunakan Textarea biasa untuk Features dan Facilities */}
                      <FormField name="features" control={form.control} render={({ field }) => (
                         <FormItem><FormLabel>Features</FormLabel>
                         <FormControl>                            
@@ -220,7 +226,7 @@ export function DestinationForm({ open, onOpenChange, destinationItem }: Destina
                                 className="h-60 mb-12" 
                                 value={field.value || ''} 
                                 onChange={field.onChange} 
-                                placeholder="Describe the Features..." 
+                                placeholder="Describe the Facilities..." 
                             />
                         </FormControl><FormMessage />
                         </FormItem>

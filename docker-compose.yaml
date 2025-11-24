@@ -1,5 +1,3 @@
-version: "3.8"
-
 services:
   admin:
     container_name: skripsi_admin
