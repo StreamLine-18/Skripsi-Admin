@@ -58,9 +58,13 @@ export default function Login() {
           variant: "default",
         });
 
-        // Invalidate queries and navigate immediately
-        queryClient.invalidateQueries({ queryKey: ['me'] });
-        setLocation("/"); // Use wouter navigation instead of window.location
+        // Reset the 'me' query cache and refetch with new token
+        queryClient.removeQueries({ queryKey: ['me'] });
+        
+        // Small delay to ensure token is saved before navigation
+        setTimeout(() => {
+          setLocation("/");
+        }, 100);
       } else {
         // If not an admin, deny access
         toast({

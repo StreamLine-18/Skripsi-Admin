@@ -1,28 +1,28 @@
 import React from "react";
-import { Switch, Route, Redirect, useLocation } from "wouter";
+import { Switch, Route, Redirect } from "wouter";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider, useQuery } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import AdminLayout from "@/components/layout/AdminLayout";
-import Dashboard from "@/pages/Dashboard";
-import Login from "@/pages/Login";
-import NotFound from "@/pages/not-found";
-import Users from "@/pages/Users";
-import DayTypes from "@/pages/DayTypes"; 
-import VisitorCategories from "@/pages/VisitorCategories";
-import TicketPrices from "./pages/TicketPrices";
-import Bookings from "@/pages/Booking";
-import BookingDetail from "@/pages/BookingDetail";
-import QrScanner from "./pages/QrScanner";
-import Gates from "@/pages/Gates";
-import OnsiteBooking from "./pages/OnsiteBooking";
-import NewsPage from "./pages/News";
-import EventsPage from "./pages/Event";
-import DestinationsPage from "./pages/Destinations";
-import SKMPage from "./pages/SKM";
-import PengaduanPage from "./pages/Pengaduan";
-import WBSPage from "./pages/WBS";
+import Dashboard from "@/pages/Main/Dashboard";
+import Login from "@/pages/Auth/Login";
+import NotFound from "@/pages/Utils/not-found";
+import Users from "@/pages/MasterData/Users";
+import DayTypes from "@/pages/MasterData/DayTypes"; 
+import VisitorCategories from "@/pages/MasterData/VisitorCategories";
+import TicketPrices from "./pages/MasterData/TicketPrices";
+import Bookings from "@/pages/Main/Booking/Booking";
+import BookingDetail from "@/pages/Main/Booking/BookingDetail";
+import QrScanner from "./pages/Main/Booking/QrScanner";
+import Gates from "@/pages/MasterData/Gates";
+import OnsiteBooking from "./pages/Main/OnsiteBooking";
+import NewsPage from "./pages/Main/News";
+import EventsPage from "./pages/Main/Event";
+import DestinationsPage from "./pages/Main/Destinations";
+import SKMPage from "./pages/Survey/SKM";
+import PengaduanPage from "./pages/Survey/Pengaduan";
+import WBSPage from "./pages/Survey/WBS";
 import { authApi } from "./lib/api";
 import { useToast } from "./hooks/use-toast";
 
@@ -79,9 +79,7 @@ function ProtectedRoutes() {
 // --- Auth Resolver with API call ---
 function AuthResolver() {
     const token = localStorage.getItem("access_token");
-    const [, setLocation] = useLocation();
     const { toast } = useToast();
-    const [isLoaderVisible, setIsLoaderVisible] = React.useState(true);
 
     const { data: userResponse, isLoading, isError } = useQuery({
         queryKey: ['me'],
@@ -90,25 +88,14 @@ function AuthResolver() {
         retry: false,
     });
 
-    React.useEffect(() => {
-        if (token) {
-            setIsLoaderVisible(true);
-            const timer = setTimeout(() => setIsLoaderVisible(false), 500);
-            return () => clearTimeout(timer);
-        } else {
-            setIsLoaderVisible(false);
-        }
-    }, [token]);
-
-    if (token && (isLoading || isLoaderVisible)) {
+    if (token && isLoading) {
         return <FullScreenLoader />;
     }
 
     if (isError) {
         localStorage.removeItem("access_token");
         localStorage.removeItem("user_role");
-        setLocation("/login");
-        return null;
+        return <PublicRoutes />;
     }
 
     if (userResponse?.data) {
@@ -123,8 +110,7 @@ function AuthResolver() {
                 description: "You do not have permission to access the admin panel.",
                 variant: "destructive",
             });
-            setLocation("/login");
-            return null;
+            return <PublicRoutes />;
         }
     }
 

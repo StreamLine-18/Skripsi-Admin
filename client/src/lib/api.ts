@@ -98,29 +98,34 @@ export interface InsertTicketPrice {
     is_active?: boolean;
 }
 
-export interface BookingItem {
-    id_ticket_price: string;
-    quantity: number;
-    price: number;
+export interface BookingDetail {
+    id_booking_detail: string;
+    id_booking: string;
     gate_name: string;
     category_name: string;
     day_type_name: string;
+    price: number;
+    quantity: number;
+    subtotal: number;
+    id_ticket_price?: string;
+    created_on: string;
+    updated_on: string;
 }
 
 export interface Booking {
     id_booking: string;
-    id_user: string;
+    id_user?: string;
     source: 'online' | 'offline';
-    leader_name: string;
+    leader_name?: string;
     leader_gender?: string;
     leader_nationality?: string;
     leader_id_type?: string;
     leader_id_number?: string;
-    leader_phone: string;
-    visit_date: string;
-    items: BookingItem[];
+    leader_phone?: string;
+    visit_date?: string;
+    details: BookingDetail[];
     total_amount: number;
-    status: 'Pending' | 'Success' | 'Used' | 'Expired' | 'Canceled' | 'Denied';
+    status: 'Pending' | 'Success' | 'Used' | 'Expired' | 'Canceled' | 'Denied' | 'Failed';
     computed_status?: 'Valid' | 'Expired' | 'Used' | 'Pending';
     payment_gateway_token?: string | null;
     paid_at?: string | null;
@@ -129,6 +134,7 @@ export interface Booking {
     expired_at?: string;
     created_on: string;
     updated_on?: string;
+    created_by?: string;
     user?: {
         full_name: string;
         email: string;
@@ -136,11 +142,10 @@ export interface Booking {
 }
 
 export interface OnsiteBookingPayload {
+    leaderName?: string;
     leader?: {
-        name?: string;
         nationality?: string;
         id_number?: string;
-        visit_date?: string;
     };
     ticketOrders: {
         id_ticket_price: string;
@@ -177,16 +182,6 @@ export interface BookingSearchParams extends QueryParams {
     source?: 'online' | 'offline';
     startDate?: string;
     endDate?: string;
-}
-
-export interface BookingDetail {
-  id_booking_detail: string;
-  id_booking: string;
-  id_ticket_price: string;
-  price_at_purchase: number;
-  used_at?: string;
-  used_by?: string;
-  ticketPrice: TicketPrice;
 }
 
 export interface LoginData {

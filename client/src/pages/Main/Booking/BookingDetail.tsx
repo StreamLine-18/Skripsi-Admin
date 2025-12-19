@@ -306,24 +306,28 @@ export default function BookingDetail() {
             </CardHeader>
             <CardContent>
               <div className="space-y-3">
-                {booking.items.map((item, index) => (
-                  <div key={index} className="flex items-center justify-between p-4 rounded-lg bg-gray-50 border">
-                    <div className="flex-grow">
-                      <p className="font-semibold text-gray-900">{item.gate_name}</p>
-                      <p className="text-sm text-gray-600">
-                        {item.category_name} • {item.day_type_name}
-                      </p>
-                      <p className="text-xs text-gray-500 mt-1">
-                        {item.quantity} tiket × {formatPrice(item.price)}
-                      </p>
+                {booking.details && booking.details.length > 0 ? (
+                  booking.details.map((detail, index) => (
+                    <div key={index} className="flex items-center justify-between p-4 rounded-lg bg-gray-50 border">
+                      <div className="flex-grow">
+                        <p className="font-semibold text-gray-900">{detail.gate_name}</p>
+                        <p className="text-sm text-gray-600">
+                          {detail.category_name} • {detail.day_type_name}
+                        </p>
+                        <p className="text-xs text-gray-500 mt-1">
+                          {detail.quantity} tiket × {formatPrice(detail.price)}
+                        </p>
+                      </div>
+                      <div className="text-right">
+                        <p className="font-semibold text-gray-900">
+                          {formatPrice(detail.subtotal)}
+                        </p>
+                      </div>
                     </div>
-                    <div className="text-right">
-                      <p className="font-semibold text-gray-900">
-                        {formatPrice(item.price * item.quantity)}
-                      </p>
-                    </div>
-                  </div>
-                ))}
+                  ))
+                ) : (
+                  <p className="text-sm text-gray-500 text-center py-4">Tidak ada data tiket</p>
+                )}
               </div>
             </CardContent>
           </Card>

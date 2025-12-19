@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { keepPreviousData } from '@tanstack/react-query';
-import { Eye, Ticket, TrendingUp, Users, DollarSign, Search, Filter, Plus } from "lucide-react";
+import { Eye, Ticket, TrendingUp, Users, DollarSign, Search, Filter, Plus, QrCode } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -140,76 +140,84 @@ export default function Bookings() {
             Kelola dan pantau semua transaksi booking
           </p>
         </div>
-        <Link href="/onsite-booking">
-          <Button className="bg-green-600 hover:bg-green-700">
-            <Plus className="h-4 w-4 mr-2" />
-            Booking On-Site
-          </Button>
-        </Link>
+        <div className="flex gap-2">
+          <Link href="/qr-scanner">
+            <Button variant="outline" className="border-blue-500 text-blue-600 hover:bg-blue-50">
+              <QrCode className="h-4 w-4 mr-2" />
+              Scan QR
+            </Button>
+          </Link>
+          <Link href="/onsite-booking">
+            <Button className="bg-green-600 hover:bg-green-700">
+              <Plus className="h-4 w-4 mr-2" />
+              Booking On-Site
+            </Button>
+          </Link>
+        </div>
       </div>
 
       {/* Analytics Cards */}
       {analytics && (
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <Card>
+          <Card className="bg-gradient-to-br from-blue-50 to-blue-100 border-blue-200">
             <CardContent className="pt-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-gray-500">Total Booking</p>
-                  <p className="text-2xl font-semibold text-gray-900 mt-1">
-                    {analytics?.total_bookings || 0}
+                  <p className="text-sm font-medium text-blue-700">Total Booking</p>
+                  <p className="text-3xl font-bold text-blue-900 mt-2">
+                    {(analytics?.total_bookings || 0).toLocaleString()}
                   </p>
                 </div>
-                <div className="h-12 w-12 bg-blue-100 rounded-lg flex items-center justify-center">
-                  <Ticket className="h-6 w-6 text-blue-600" />
+                <div className="h-14 w-14 bg-blue-500 rounded-xl flex items-center justify-center shadow-lg">
+                  <Ticket className="h-7 w-7 text-white" />
                 </div>
               </div>
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className="bg-gradient-to-br from-green-50 to-green-100 border-green-200">
             <CardContent className="pt-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-gray-500">Total Pendapatan</p>
-                  <p className="text-2xl font-semibold text-gray-900 mt-1">
+                  <p className="text-sm font-medium text-green-700">Total Pendapatan</p>
+                  <p className="text-3xl font-bold text-green-900 mt-2">
                     {formatPrice(analytics?.total_revenue || 0)}
                   </p>
                 </div>
-                <div className="h-12 w-12 bg-green-100 rounded-lg flex items-center justify-center">
-                  <DollarSign className="h-6 w-6 text-green-600" />
+                <div className="h-14 w-14 bg-green-500 rounded-xl flex items-center justify-center shadow-lg">
+                  <DollarSign className="h-7 w-7 text-white" />
                 </div>
               </div>
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className="bg-gradient-to-br from-purple-50 to-purple-100 border-purple-200">
             <CardContent className="pt-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-gray-500">Booking Online</p>
-                  <p className="text-2xl font-semibold text-gray-900 mt-1">
-                    {analytics?.by_source?.online || 0}
+                  <p className="text-sm font-medium text-purple-700">Booking Online</p>
+                  <p className="text-3xl font-bold text-purple-900 mt-2">
+                    {(analytics?.by_source?.online || 0).toLocaleString()}
                   </p>
                 </div>
-                <div className="h-12 w-12 bg-purple-100 rounded-lg flex items-center justify-center">
-                  <TrendingUp className="h-6 w-6 text-purple-600" />
+                <div className="h-14 w-14 bg-purple-500 rounded-xl flex items-center justify-center shadow-lg">
+                  <TrendingUp className="h-7 w-7 text-white" />
                 </div>
               </div>
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className="bg-gradient-to-br from-orange-50 to-orange-100 border-orange-200">
             <CardContent className="pt-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-gray-500">Booking On-Site</p>
-                  <p className="text-2xl font-semibold text-gray-900 mt-1">
-                    {analytics?.by_source?.offline || 0}
+                  <p className="text-sm font-medium text-orange-700">Booking On-Site</p>
+                  <p className="text-3xl font-bold text-orange-900 mt-2">
+                    {(analytics?.by_source?.offline || 0).toLocaleString()}
                   </p>
                 </div>
-                <div className="h-12 w-12 bg-orange-100 rounded-lg flex items-center justify-center">
-                  <Users className="h-6 w-6 text-orange-600" />
+                <div className="h-14 w-14 bg-orange-500 rounded-xl flex items-center justify-center shadow-lg">
+                  <Users className="h-7 w-7 text-white" />
                 </div>
               </div>
             </CardContent>
