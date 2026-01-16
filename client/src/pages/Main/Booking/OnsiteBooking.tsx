@@ -11,6 +11,16 @@ import { gateApi, dayTypeApi, ticketPriceApi, bookingApi } from "@/lib/api";
 import type { Gate, DayType, TicketPrice } from "@/lib/api";
 import { Plus, Minus, Trash2, ShoppingCart, Loader2, Ticket, ArrowLeft, CheckCircle, Store, User, Calendar, MapPin } from "lucide-react";
 import { Link } from "wouter";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 type CartItem = TicketPrice & { quantity: number };
 
@@ -21,6 +31,7 @@ export default function OnsiteBooking() {
   const [selectedGate, setSelectedGate] = useState<string>("");
   const [selectedDayType, setSelectedDayType] = useState<string>("");
   const [cart, setCart] = useState<CartItem[]>([]);
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
 
   const { data: gatesResponse } = useQuery({
     queryKey: ["gates", "all"],
@@ -137,16 +148,21 @@ export default function OnsiteBooking() {
     },
   });
 
-  const handleCreateBooking = () => {
+  const handleOpenConfirmModal = () => {
     if (cart.length === 0) {
       toast({ title: "Keranjang Kosong", description: "Tambahkan minimal satu tiket.", variant: "destructive" });
       return;
     }
+    setShowConfirmModal(true);
+  };
+
+  const handleConfirmBooking = () => {
     const payload: any = {
       ticketOrders: cart.map((item) => ({ id_ticket_price: item.id_ticket_price, quantity: item.quantity })),
     };
     if (customerName.trim()) payload.leaderName = customerName.trim();
     createBookingMutation.mutate(payload);
+    setShowConfirmModal(false);
   };
 
   const selectedGateName = gates.find((g) => g.id_gate === selectedGate)?.name || "";
@@ -226,11 +242,10 @@ export default function OnsiteBooking() {
                   key={gate.id_gate}
                   variant="outline"
                   onClick={() => handleGateChange(gate.id_gate)}
-                  className={`h-14 text-base font-medium ${
-                    selectedGate === gate.id_gate
+                  className={`h-14 text-base font-medium ${selectedGate === gate.id_gate
                       ? "bg-blue-600 hover:bg-blue-700 text-white border-blue-600 ring-2 ring-blue-300"
                       : "text-gray-700 hover:bg-blue-50 hover:border-blue-300"
-                  }`}
+                    }`}
                 >
                   {gate.name}
                 </Button>
@@ -253,11 +268,10 @@ export default function OnsiteBooking() {
                   key={dt.id_day_type}
                   variant="outline"
                   onClick={() => handleDayTypeChange(dt.id_day_type)}
-                  className={`h-14 text-base font-medium ${
-                    selectedDayType === dt.id_day_type
+                  className={`h-14 text-base font-medium ${selectedDayType === dt.id_day_type
                       ? "bg-purple-600 hover:bg-purple-700 text-white border-purple-600 ring-2 ring-purple-300"
                       : "text-gray-800 hover:bg-purple-50 hover:border-purple-300"
-                  }`}
+                    }`}
                 >
                   {dt.name}
                 </Button>
@@ -313,9 +327,8 @@ export default function OnsiteBooking() {
                     return (
                       <div
                         key={ticket.id_ticket_price}
-                        className={`relative p-4 rounded-xl border-2 cursor-pointer transition-all ${
-                          inCart ? "border-green-500 bg-green-50" : "border-gray-200 hover:border-green-300 hover:bg-green-50/50"
-                        }`}
+                        className={`relative p-4 rounded-xl border-2 cursor-pointer transition-all ${inCart ? "border-green-500 bg-green-50" : "border-gray-200 hover:border-green-300 hover:bg-green-50/50"
+                          }`}
                         onClick={() => addToCart(ticket)}
                       >
                         {inCart && <Badge className="absolute -top-2 -right-2 bg-green-600">{inCart.quantity}</Badge>}
@@ -414,7 +427,7 @@ export default function OnsiteBooking() {
               )}
 
               <Button
-                onClick={handleCreateBooking}
+                onClick={handleOpenConfirmModal}
                 className="w-full bg-green-600 hover:bg-green-700 h-12 text-base font-semibold"
                 disabled={createBookingMutation.isPending || cart.length === 0}
               >
@@ -435,6 +448,74 @@ export default function OnsiteBooking() {
           </Card>
         </div>
       </div>
+
+      {/* Confirmation Modal */}
+      <AlertDialog open={showConfirmModal} onOpenChange={setShowConfirmModal}>
+        <AlertDialogContent className="max-w-md">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <CheckCircle className="h-5 w-5 text-green-600" />
+              Konfirmasi Booking
+            </AlertDialogTitle>
+            <AlertDialogDescription asChild>
+              <div className="space-y-4">
+                <p>Pastikan data booking sudah benar sebelum melanjutkan:</p>
+
+                <div className="bg-gray-50 rounded-lg p-4 space-y-3">
+                  {customerName.trim() && (
+                    <div className="flex items-center gap-2">
+                      <User className="h-4 w-4 text-gray-500" />
+                      <span className="text-sm text-gray-600">Nama:</span>
+                      <span className="text-sm font-medium text-gray-900">{customerName.trim()}</span>
+                    </div>
+                  )}
+                  <div className="flex items-center gap-2">
+                    <MapPin className="h-4 w-4 text-gray-500" />
+                    <span className="text-sm text-gray-600">Gerbang:</span>
+                    <span className="text-sm font-medium text-gray-900">{selectedGateName}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Calendar className="h-4 w-4 text-gray-500" />
+                    <span className="text-sm text-gray-600">Jenis Hari:</span>
+                    <span className="text-sm font-medium text-gray-900">{selectedDayTypeName}</span>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <p className="text-sm font-medium text-gray-700">Detail Tiket:</p>
+                  <div className="bg-gray-50 rounded-lg p-3 space-y-2">
+                    {cart.map((item) => (
+                      <div key={item.id_ticket_price} className="flex justify-between items-center text-sm">
+                        <span className="text-gray-600">
+                          {item.category.name} x {item.quantity}
+                        </span>
+                        <span className="font-medium text-gray-900">
+                          {formatPrice(Number(item.price) * item.quantity)}
+                        </span>
+                      </div>
+                    ))}
+                    <Separator className="my-2" />
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm font-medium text-gray-700">Total ({totalTickets} tiket)</span>
+                      <span className="text-lg font-bold text-green-600">{formatPrice(totalAmount)}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Batal</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleConfirmBooking}
+              className="bg-green-600 hover:bg-green-700"
+            >
+              <CheckCircle className="mr-2 h-4 w-4" />
+              Konfirmasi & Proses
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

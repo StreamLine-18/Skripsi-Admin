@@ -9,14 +9,14 @@ import Dashboard from "@/pages/Main/Dashboard";
 import Login from "@/pages/Auth/Login";
 import NotFound from "@/pages/Utils/not-found";
 import Users from "@/pages/MasterData/Users";
-import DayTypes from "@/pages/MasterData/DayTypes"; 
+import DayTypes from "@/pages/MasterData/DayTypes";
 import VisitorCategories from "@/pages/MasterData/VisitorCategories";
 import TicketPrices from "./pages/MasterData/TicketPrices";
 import Bookings from "@/pages/Main/Booking/Booking";
 import BookingDetail from "@/pages/Main/Booking/BookingDetail";
 import QrScanner from "./pages/Main/Booking/QrScanner";
 import Gates from "@/pages/MasterData/Gates";
-import OnsiteBooking from "./pages/Main/OnsiteBooking";
+import OnsiteBooking from "./pages/Main/Booking/OnsiteBooking";
 import NewsPage from "./pages/Main/News";
 import EventsPage from "./pages/Main/Event";
 import DestinationsPage from "./pages/Main/Destinations";
@@ -54,14 +54,14 @@ function ProtectedRoutes() {
     <AdminLayout>
       <Switch>
         <Route path="/" component={Dashboard} />
-        <Route path="/bookings" component={Bookings} /> 
+        <Route path="/bookings" component={Bookings} />
         <Route path="/users" component={Users} />
-        <Route path="/ticket-prices" component={TicketPrices} /> 
-        <Route path="/day-types" component={DayTypes} /> 
-        <Route path="/gates" component={Gates} /> 
+        <Route path="/ticket-prices" component={TicketPrices} />
+        <Route path="/day-types" component={DayTypes} />
+        <Route path="/gates" component={Gates} />
         <Route path="/qr-scanner" component={QrScanner} />
         <Route path="/bookings/:id" component={BookingDetail} />
-        <Route path="/visitor-categories" component={VisitorCategories} /> 
+        <Route path="/visitor-categories" component={VisitorCategories} />
         <Route path="/onsite-booking" component={OnsiteBooking} />
         <Route path="/news" component={NewsPage} />
         <Route path="/events" component={EventsPage} />
@@ -78,43 +78,43 @@ function ProtectedRoutes() {
 
 // --- Auth Resolver with API call ---
 function AuthResolver() {
-    const token = localStorage.getItem("access_token");
-    const { toast } = useToast();
+  const token = localStorage.getItem("access_token");
+  const { toast } = useToast();
 
-    const { data: userResponse, isLoading, isError } = useQuery({
-        queryKey: ['me'],
-        queryFn: authApi.getMe,
-        enabled: !!token,
-        retry: false,
-    });
+  const { data: userResponse, isLoading, isError } = useQuery({
+    queryKey: ['me'],
+    queryFn: authApi.getMe,
+    enabled: !!token,
+    retry: false,
+  });
 
-    if (token && isLoading) {
-        return <FullScreenLoader />;
-    }
+  if (token && isLoading) {
+    return <FullScreenLoader />;
+  }
 
-    if (isError) {
-        localStorage.removeItem("access_token");
-        localStorage.removeItem("user_role");
-        return <PublicRoutes />;
-    }
-
-    if (userResponse?.data) {
-        const user = userResponse.data;
-        if (user.role?.name === 'admin') {
-            return <ProtectedRoutes />;
-        } else {
-            localStorage.removeItem("access_token");
-            localStorage.removeItem("user_role");
-            toast({
-                title: "Access Denied",
-                description: "You do not have permission to access the admin panel.",
-                variant: "destructive",
-            });
-            return <PublicRoutes />;
-        }
-    }
-
+  if (isError) {
+    localStorage.removeItem("access_token");
+    localStorage.removeItem("user_role");
     return <PublicRoutes />;
+  }
+
+  if (userResponse?.data) {
+    const user = userResponse.data;
+    if (user.role?.name === 'admin') {
+      return <ProtectedRoutes />;
+    } else {
+      localStorage.removeItem("access_token");
+      localStorage.removeItem("user_role");
+      toast({
+        title: "Access Denied",
+        description: "You do not have permission to access the admin panel.",
+        variant: "destructive",
+      });
+      return <PublicRoutes />;
+    }
+  }
+
+  return <PublicRoutes />;
 }
 
 

@@ -6,15 +6,15 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
-import { 
-  ArrowLeft, 
-  Camera, 
-  Image as ImageIcon, 
-  CheckCircle, 
-  RefreshCw, 
-  User, 
-  Calendar, 
-  Ticket, 
+import {
+  ArrowLeft,
+  Camera,
+  Image as ImageIcon,
+  CheckCircle,
+  RefreshCw,
+  User,
+  Calendar,
+  Ticket,
   AlertCircle,
   QrCode,
   ScanLine,
@@ -111,6 +111,25 @@ export default function QrScanner() {
     });
   };
 
+  const isVisitDateToday = (visitDate: string | null | undefined): boolean => {
+    if (!visitDate) return false;
+    const today = new Date();
+    const visit = new Date(visitDate);
+    return (
+      today.getFullYear() === visit.getFullYear() &&
+      today.getMonth() === visit.getMonth() &&
+      today.getDate() === visit.getDate()
+    );
+  };
+
+  const getTodayDateFormatted = () => {
+    return new Date().toLocaleDateString("id-ID", {
+      day: "numeric",
+      month: "long",
+      year: "numeric",
+    });
+  };
+
   const formatTime = (date: Date) => {
     return date.toLocaleTimeString("id-ID", {
       hour: "2-digit",
@@ -146,7 +165,7 @@ export default function QrScanner() {
 
   const onScanSuccess = (decodedText: string) => {
     if (scannerRef.current) {
-      scannerRef.current.stop().catch(() => {});
+      scannerRef.current.stop().catch(() => { });
       scannerRef.current = null;
     }
     setMode("idle");
@@ -168,7 +187,7 @@ export default function QrScanner() {
       const qrScanner = new Html5Qrcode("qr-reader");
       scannerRef.current = qrScanner;
       qrScanner
-        .start(selectedCameraId, { fps: 10, qrbox: { width: 250, height: 250 } }, onScanSuccess, () => {})
+        .start(selectedCameraId, { fps: 10, qrbox: { width: 250, height: 250 } }, onScanSuccess, () => { })
         .catch(() => {
           toast({
             title: "Error Scanner",
@@ -206,7 +225,7 @@ export default function QrScanner() {
 
   const resetScanner = () => {
     if (scannerRef.current) {
-      scannerRef.current.stop().catch(() => {});
+      scannerRef.current.stop().catch(() => { });
       scannerRef.current = null;
     }
     setMode("idle");
@@ -256,8 +275,9 @@ export default function QrScanner() {
     );
   };
 
-  const canRedeem = booking && !isLoadingBooking && !bookingError && !booking.used_at && 
-    (booking.computed_status === "Valid" || booking.status === "Success");
+  const isDateValid = booking ? isVisitDateToday(booking.visit_date) : false;
+  const canRedeem = booking && !isLoadingBooking && !bookingError && !booking.used_at &&
+    (booking.computed_status === "Valid" || booking.status === "Success") && isDateValid;
 
   return (
     <div className="space-y-6">
@@ -401,11 +421,10 @@ export default function QrScanner() {
                   {recentScans.map((scan, index) => (
                     <div
                       key={`${scan.id}-${index}`}
-                      className={`p-3 rounded-lg border ${
-                        scan.status === "success"
+                      className={`p-3 rounded-lg border ${scan.status === "success"
                           ? "bg-green-50 border-green-200"
                           : "bg-red-50 border-red-200"
-                      }`}
+                        }`}
                     >
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2">
@@ -558,6 +577,23 @@ export default function QrScanner() {
                     {formatPrice(booking.total_amount)}
                   </span>
                 </div>
+
+                {/* Warning for wrong date */}
+                {!isDateValid && !booking.used_at && (
+                  <div className="bg-red-50 border border-red-200 rounded-lg p-4 flex items-start gap-3">
+                    <Calendar className="h-5 w-5 text-red-600 flex-shrink-0 mt-0.5" />
+                    <div>
+                      <p className="font-medium text-red-900">Tanggal Kunjungan Tidak Sesuai</p>
+                      <p className="text-sm text-red-700 mt-1">
+                        Tiket ini untuk tanggal <strong>{formatDate(booking.visit_date)}</strong>,
+                        sedangkan hari ini adalah <strong>{getTodayDateFormatted()}</strong>.
+                      </p>
+                      <p className="text-sm text-red-700 mt-1">
+                        Tiket hanya dapat ditukar pada tanggal kunjungan yang sesuai.
+                      </p>
+                    </div>
+                  </div>
+                )}
 
                 {/* Warning for already used */}
                 {booking.used_at && (
