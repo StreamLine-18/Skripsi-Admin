@@ -22,6 +22,82 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 
+// Config for holiday API
+const HOLIDAY_API = import.meta.env.VITE_HOLIDAY_API || "";
+
+// Helper function to check if a date is a national holiday
+async function checkIsHoliday(dateStr: string): Promise<boolean> {
+  // First try external API if available
+  if (HOLIDAY_API) {
+    try {
+      const res = await fetch(HOLIDAY_API);
+      const holidays = await res.json();
+      return holidays.some((h: any) => h.holiday_date === dateStr && h.is_national_holiday);
+    } catch {
+      // Fallback to offline check if API fails
+    }
+  }
+
+  // Offline holiday check (Indonesian fixed holidays)
+  const d = new Date(dateStr);
+  if (isNaN(d.getTime())) return false;
+
+  const year = d.getFullYear();
+  const fmt = (dt: Date) => {
+    const y = dt.getFullYear();
+    const m = String(dt.getMonth() + 1).padStart(2, "0");
+    const day = String(dt.getDate()).padStart(2, "0");
+    return `${y}-${m}-${day}`;
+  };
+
+  const iso = fmt(d);
+
+  // Fixed-date national holidays (common ones)
+  const fixed = new Set([
+    `${year}-01-01`, // New Year's Day
+    `${year}-05-01`, // Labour Day
+    `${year}-06-01`, // Pancasila Day
+    `${year}-08-17`, // Independence Day
+    `${year}-12-25`, // Christmas
+  ]);
+
+  // Compute Easter Sunday (Meeus/Jones algorithm) and Good Friday
+  const easterSunday = (y: number) => {
+    const a = y % 19;
+    const b = Math.floor(y / 100);
+    const c = y % 100;
+    const d1 = Math.floor(b / 4);
+    const e = b % 4;
+    const f = Math.floor((b + 8) / 25);
+    const g = Math.floor((b - f + 1) / 3);
+    const h = (19 * a + b - d1 - g + 15) % 30;
+    const i = Math.floor(c / 4);
+    const k = c % 4;
+    const l = (32 + 2 * e + 2 * i - h - k) % 7;
+    const m = Math.floor((a + 11 * h + 22 * l) / 451);
+    const month = Math.floor((h + l - 7 * m + 114) / 31);
+    const day = ((h + l - 7 * m + 114) % 31) + 1;
+    return new Date(y, month - 1, day);
+  };
+
+  const es = easterSunday(year);
+  const goodFriday = new Date(es);
+  goodFriday.setDate(es.getDate() - 2);
+  const gfIso = fmt(goodFriday);
+
+  if (fixed.has(iso)) return true;
+  if (iso === gfIso) return true;
+
+  return false;
+}
+
+// Helper function to detect day type based on date and holiday status
+function detectDayType(date: Date, isHoliday: boolean): "Weekend" | "Weekday" {
+  const day = date.getDay();
+  if (day === 0 || day === 6 || isHoliday) return "Weekend";
+  return "Weekday";
+}
+
 type CartItem = TicketPrice & { quantity: number };
 
 export default function OnsiteBooking() {
@@ -32,6 +108,7 @@ export default function OnsiteBooking() {
   const [selectedDayType, setSelectedDayType] = useState<string>("");
   const [cart, setCart] = useState<CartItem[]>([]);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [isLoadingDayType, setIsLoadingDayType] = useState(true);
 
   const { data: gatesResponse } = useQuery({
     queryKey: ["gates", "all"],
@@ -59,17 +136,50 @@ export default function OnsiteBooking() {
   const dayTypes: DayType[] = dayTypesResponse?.data || [];
   const availableTickets: TicketPrice[] = ticketPricesResponse?.data || [];
 
+  // Auto-detect day type based on today's date and holiday status
   useEffect(() => {
-    if (dayTypes.length > 0 && !selectedDayType) {
-      const today = new Date().getDay();
-      const isWeekend = today === 0 || today === 6;
-      const defaultDayType = dayTypes.find((dt) =>
-        isWeekend
-          ? dt.name.toLowerCase().includes("weekend") || dt.name.toLowerCase().includes("libur")
-          : dt.name.toLowerCase().includes("weekday") || dt.name.toLowerCase().includes("kerja")
-      );
-      if (defaultDayType) setSelectedDayType(defaultDayType.id_day_type);
-    }
+    if (dayTypes.length === 0 || selectedDayType) return;
+
+    const autoDetectDayType = async () => {
+      setIsLoadingDayType(true);
+      try {
+        const today = new Date();
+        const todayStr = today.toISOString().split("T")[0]; // Format: YYYY-MM-DD
+
+        // Check if today is a national holiday
+        const isHoliday = await checkIsHoliday(todayStr);
+        const detectedType = detectDayType(today, isHoliday);
+
+        // Find matching day type from backend
+        const matchedDayType = dayTypes.find(dt => {
+          const name = dt.name.toLowerCase();
+          if (detectedType === "Weekend") {
+            return name.includes("weekend") || name.includes("akhir pekan") || name.includes("libur");
+          } else {
+            return name.includes("weekday") || name.includes("kerja") || name.includes("biasa");
+          }
+        });
+
+        if (matchedDayType) {
+          setSelectedDayType(matchedDayType.id_day_type);
+        }
+      } catch (error) {
+        console.error("Error detecting day type:", error);
+        // Fallback to simple weekend check
+        const today = new Date().getDay();
+        const isWeekend = today === 0 || today === 6;
+        const defaultDayType = dayTypes.find((dt) =>
+          isWeekend
+            ? dt.name.toLowerCase().includes("weekend") || dt.name.toLowerCase().includes("libur")
+            : dt.name.toLowerCase().includes("weekday") || dt.name.toLowerCase().includes("kerja")
+        );
+        if (defaultDayType) setSelectedDayType(defaultDayType.id_day_type);
+      } finally {
+        setIsLoadingDayType(false);
+      }
+    };
+
+    autoDetectDayType();
   }, [dayTypes, selectedDayType]);
 
   useEffect(() => {
@@ -217,9 +327,25 @@ export default function OnsiteBooking() {
           <CardContent className="pt-4 pb-4">
             <div className="flex items-center gap-3">
               <Ticket className="h-5 w-5 text-purple-600" />
-              <div>
-                <p className="text-xs text-purple-600 font-medium">Jenis Hari</p>
-                <p className="text-sm font-semibold text-purple-900">{selectedDayTypeName || "Belum dipilih"}</p>
+              <div className="flex-1">
+                <div className="flex items-center gap-2">
+                  <p className="text-xs text-purple-600 font-medium">Jenis Hari</p>
+                  {!isLoadingDayType && selectedDayTypeName && (
+                    <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-4 bg-purple-200/50 text-purple-700 border-purple-300">
+                      Otomatis
+                    </Badge>
+                  )}
+                </div>
+                <p className="text-sm font-semibold text-purple-900">
+                  {isLoadingDayType ? (
+                    <span className="flex items-center gap-1">
+                      <Loader2 className="h-3 w-3 animate-spin" />
+                      Mendeteksi...
+                    </span>
+                  ) : (
+                    selectedDayTypeName || "Belum dipilih"
+                  )}
+                </p>
               </div>
             </div>
           </CardContent>
@@ -243,8 +369,8 @@ export default function OnsiteBooking() {
                   variant="outline"
                   onClick={() => handleGateChange(gate.id_gate)}
                   className={`h-14 text-base font-medium ${selectedGate === gate.id_gate
-                      ? "bg-blue-600 hover:bg-blue-700 text-white border-blue-600 ring-2 ring-blue-300"
-                      : "text-gray-700 hover:bg-blue-50 hover:border-blue-300"
+                    ? "bg-blue-600 hover:bg-blue-700 text-white border-blue-600 ring-2 ring-blue-300"
+                    : "text-gray-700 hover:bg-blue-50 hover:border-blue-300"
                     }`}
                 >
                   {gate.name}
@@ -260,23 +386,33 @@ export default function OnsiteBooking() {
               <Calendar className="h-5 w-5 text-purple-600" />
               Pilih Jenis Hari
             </CardTitle>
+            <CardDescription className="text-xs">
+              Otomatis terdeteksi berdasarkan hari ini (termasuk cek tanggal merah). Klik untuk mengubah manual jika diperlukan.
+            </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-2 gap-2">
-              {dayTypes.map((dt) => (
-                <Button
-                  key={dt.id_day_type}
-                  variant="outline"
-                  onClick={() => handleDayTypeChange(dt.id_day_type)}
-                  className={`h-14 text-base font-medium ${selectedDayType === dt.id_day_type
+            {isLoadingDayType ? (
+              <div className="grid grid-cols-2 gap-2">
+                <div className="h-14 bg-purple-100 animate-pulse rounded-lg"></div>
+                <div className="h-14 bg-purple-100 animate-pulse rounded-lg"></div>
+              </div>
+            ) : (
+              <div className="grid grid-cols-2 gap-2">
+                {dayTypes.map((dt) => (
+                  <Button
+                    key={dt.id_day_type}
+                    variant="outline"
+                    onClick={() => handleDayTypeChange(dt.id_day_type)}
+                    className={`h-14 text-base font-medium ${selectedDayType === dt.id_day_type
                       ? "bg-purple-600 hover:bg-purple-700 text-white border-purple-600 ring-2 ring-purple-300"
                       : "text-gray-800 hover:bg-purple-50 hover:border-purple-300"
-                    }`}
-                >
-                  {dt.name}
-                </Button>
-              ))}
-            </div>
+                      }`}
+                  >
+                    {dt.name}
+                  </Button>
+                ))}
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>

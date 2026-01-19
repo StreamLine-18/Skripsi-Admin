@@ -1,9 +1,10 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { keepPreviousData } from '@tanstack/react-query';
-import { Edit, Trash2, Plus, MapPin } from "lucide-react";
+import { Edit, Trash2, Plus, MapPin, Power, PowerOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import {
   Table,
   TableBody,
@@ -49,19 +50,48 @@ export default function DestinationsPage() {
     mutationFn: (id: string) => destinationApi.deleteDestination(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["destinations"] });
-      toast({ 
-        title: "Berhasil", 
-        description: "Destinasi berhasil dihapus" 
+      toast({
+        title: "Berhasil",
+        description: "Destinasi berhasil dihapus"
       });
       setIsDeleteDialogOpen(false);
     },
     onError: (error: any) => {
-      toast({ 
-        title: "Gagal", 
-        description: error.message, 
-        variant: "destructive" 
+      toast({
+        title: "Gagal",
+        description: error.message,
+        variant: "destructive"
       });
     },
+  });
+
+  const toggleStatusMutation = useMutation({
+    mutationFn: (item: Destination) => {
+      const currentStatus = item.status || 'Draft';
+      const newStatus = currentStatus === "Published" ? "Draft" : "Published";
+      const formData = new FormData();
+      formData.append('status', newStatus);
+      formData.append('name', item.name);
+      formData.append('id_gate', item.id_gate);
+      if (item.description) formData.append('description', item.description);
+      return destinationApi.updateDestination(item.id_destination, formData);
+    },
+    onSuccess: (_, item) => {
+      queryClient.invalidateQueries({ queryKey: ["destinations"] });
+      const currentStatus = item.status || 'Draft';
+      const newStatus = currentStatus === "Published" ? "dinonaktifkan" : "dipublikasikan";
+      toast({
+        title: "Berhasil",
+        description: `Destinasi berhasil ${newStatus}`
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Gagal",
+        description: error.message,
+        variant: "destructive"
+      });
+    }
   });
 
   const handleCreate = () => {
@@ -145,6 +175,7 @@ export default function DestinationsPage() {
                   <TableRow>
                     <TableHead>Nama Destinasi</TableHead>
                     <TableHead>Slug</TableHead>
+                    <TableHead>Status</TableHead>
                     <TableHead>Terakhir Diupdate</TableHead>
                     <TableHead className="text-right">Aksi</TableHead>
                   </TableRow>
@@ -170,22 +201,36 @@ export default function DestinationsPage() {
                           {destination.slug}
                         </span>
                       </TableCell>
+                      <TableCell>
+                        <Badge className={(destination.status || 'Draft') === 'Published' ? "bg-green-100 text-green-800 border-green-200" : "bg-gray-100 text-gray-800 border-gray-200"}>
+                          {(destination.status || 'Draft') === 'Published' ? 'Dipublikasi' : 'Draft'}
+                        </Badge>
+                      </TableCell>
                       <TableCell className="text-gray-600">
                         {formatDate(destination.updated_on)}
                       </TableCell>
                       <TableCell className="text-right">
                         <div className="flex justify-end gap-2">
-                          <Button 
-                            variant="ghost" 
-                            size="sm" 
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => toggleStatusMutation.mutate(destination)}
+                            title={(destination.status || 'Draft') === 'Published' ? "Nonaktifkan" : "Publikasikan"}
+                            className={(destination.status || 'Draft') === 'Published' ? "text-yellow-600 hover:text-yellow-900 hover:bg-yellow-50" : "text-green-600 hover:text-green-900 hover:bg-green-50"}
+                          >
+                            {(destination.status || 'Draft') === 'Published' ? <PowerOff className="h-4 w-4" /> : <Power className="h-4 w-4" />}
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
                             onClick={() => handleEdit(destination)}
                           >
                             <Edit className="h-4 w-4" />
                           </Button>
-                          <Button 
-                            variant="ghost" 
-                            size="sm" 
-                            className="text-red-600 hover:text-red-900 hover:bg-red-50" 
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="text-red-600 hover:text-red-900 hover:bg-red-50"
                             onClick={() => handleDelete(destination)}
                           >
                             <Trash2 className="h-4 w-4" />
@@ -269,9 +314,9 @@ export default function DestinationsPage() {
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Batal</AlertDialogCancel>
-            <AlertDialogAction 
-              onClick={confirmDelete} 
-              className="bg-red-600 hover:bg-red-700" 
+            <AlertDialogAction
+              onClick={confirmDelete}
+              className="bg-red-600 hover:bg-red-700"
               disabled={deleteMutation.isPending}
             >
               {deleteMutation.isPending ? "Menghapus..." : "Hapus"}

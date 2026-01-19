@@ -99,6 +99,19 @@ export default function Bookings() {
     }).format(Number(price));
   };
 
+  const formatCompactPrice = (price: number) => {
+    if (price >= 1000000000) {
+      return `Rp ${(price / 1000000000).toFixed(1)}M`;
+    }
+    if (price >= 1000000) {
+      return `Rp ${(price / 1000000).toFixed(1)}jt`;
+    }
+    if (price >= 1000) {
+      return `Rp ${(price / 1000).toFixed(0)}k`;
+    }
+    return formatPrice(price);
+  };
+
   const getStatusBadge = (booking: Booking) => {
     const status = booking.computed_status || booking.status;
     const colorMap: Record<string, string> = {
@@ -181,7 +194,7 @@ export default function Bookings() {
                 <div>
                   <p className="text-sm font-medium text-green-700">Total Pendapatan</p>
                   <p className="text-3xl font-bold text-green-900 mt-2">
-                    {formatPrice(analytics?.total_revenue || 0)}
+                    {formatCompactPrice(analytics?.total_revenue || 0)}
                   </p>
                 </div>
                 <div className="h-14 w-14 bg-green-500 rounded-xl flex items-center justify-center shadow-lg">
