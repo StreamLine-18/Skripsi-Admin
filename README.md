@@ -17,7 +17,7 @@ Built using **React 18**, **TypeScript**, **Vite**, **Tailwind CSS**, **Shadcn U
 
 This admin dashboard is part of a 3-tier multi-repository system:
 
-- 🛡️ **[Admin Dashboard (`Skripsi-Admin`)](https://github.com/StreamLine-18/Skripsi-Admin)** - Management web portal for administrative staff, POS ticketing, analytics & live QR gate scanning *(Current Repository)*.
+- 🛡️ **Admin Dashboard (`Skripsi-Admin`)** - Management web portal for administrative staff, POS ticketing, analytics & live QR gate scanning *(Current Repository)*.
 - ⚙️ **[Backend RESTful API (`Skripsi-Backend`)](https://github.com/StreamLine-18/Skripsi-Backend)** - Core API server, database ORM, payment webhooks & business logic.
 - 🌐 **[Visitor Portal (`Skripsi-visitors`)](https://github.com/StreamLine-18/Skripsi-visitors)** - Mobile-first visitor web app for ticket booking, SKM surveys, complaints & WBS.
 
